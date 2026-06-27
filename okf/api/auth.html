@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Auth API</title>
+<style>body{font-family:Segoe UI,Arial,sans-serif;max-width:860px;margin:0 auto;padding:32px 24px;line-height:1.6;color:#2C2C2A;background:#FAF9F6}
+h1,h2,h3{color:#1a1a18}
+h1{border-bottom:2px solid #E6F1FB;padding-bottom:8px}
+code{background:#F1EFE8;padding:2px 5px;border-radius:4px;font-family:Consolas,monospace;font-size:0.9em}
+pre{background:#F1EFE8;padding:12px 16px;border-radius:6px;overflow-x:auto}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;margin:16px 0}
+th,td{border:1px solid #D3D1C7;padding:8px 12px;text-align:left}
+th{background:#E6F1FB}
+a{color:#185FA5}
+img{max-width:100%}
+.meta{color:#5F5E5A;font-size:0.85em;margin-bottom:24px}
+.back{display:inline-block;margin-bottom:16px;font-size:0.9em}</style>
+</head>
+<body>
+<a class="back" href="index.html">&larr; back to index</a>
+<h1><code>/api/auth</code></h1>
+<table>
+<tr><th>Method</th><th>Path</th><th>Auth</th><th>Body / Params</th><th>Returns</th></tr>
+<tr><td>POST</td><td><code>/login</code></td><td>none</td><td><code>{ username, password }</code></td><td><code>{ token, type: "Bearer", username, roles }</code></td></tr>
+<tr><td>POST</td><td><code>/register</code></td><td>none</td><td><code>{ username, email, password }</code></td><td><code>{ message }</code></td></tr>
+<tr><td>POST</td><td><code>/refresh</code></td><td>Bearer token</td><td>—</td><td>fresh <code>{ token, type, username, roles }</code></td></tr>
+<tr><td>GET</td><td><code>/me</code></td><td>Bearer token</td><td>—</td><td><code>{ username, roles }</code></td></tr>
+<tr><td>POST</td><td><code>/change-password</code></td><td>Bearer token</td><td><code>{ currentPassword, newPassword }</code> (newPassword min 8 chars)</td><td><code>200 { message }</code>; <code>400 { message: "Current password is incorrect" }</code> if <code>currentPassword</code> doesn&#39;t match</td></tr>
+</table>
+<p>JWTs are issued/verified by <a href="../../src/main/java/sg/sports/bowling/security/JwtUtil.java">JwtUtil</a>.</p>
+</body>
+</html>

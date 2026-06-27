@@ -1,0 +1,26 @@
+# Logs (run.bat / run-backend.bat / run-frontend.bat output)
+logs/
+*.log
+
+# Maven build output
+target/
+
+# Frontend (frontend/ has its own .gitignore for node_modules, dist, etc.)
+
+# IDE / editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.iml
+
+# Claude Code local/session-only state (not shared project config)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local env overrides (never commit secrets)
+.env
+.env.local

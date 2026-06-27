@@ -1,0 +1,171 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1a1a18;
+  background: #faf9f6;
+}
+
+body {
+  margin: 0;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid #d3d1c7;
+}
+
+.app-header nav a {
+  margin-right: 16px;
+  color: #185fa5;
+  text-decoration: none;
+}
+
+.app-header-user {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-menu-trigger {
+  background: none;
+}
+
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #d3d1c7;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-width: 160px;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.user-menu button {
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  padding: 8px 12px;
+}
+
+.change-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 320px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d3d1c7;
+  border-radius: 8px;
+}
+
+.change-password-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.change-password-form input {
+  padding: 8px;
+  border: 1px solid #d3d1c7;
+  border-radius: 4px;
+}
+
+.form-success {
+  color: #0f6e56;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 320px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d3d1c7;
+  border-radius: 8px;
+}
+
+.login-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.login-form input {
+  padding: 8px;
+  border: 1px solid #d3d1c7;
+  border-radius: 4px;
+}
+
+.form-error {
+  color: #a32d2d;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+th, td {
+  border: 1px solid #d3d1c7;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+th {
+  background: #e6f1fb;
+}
+
+.add-bowler-form {
+  display: flex;
+  gap: 8px;
+}
+
+.add-bowler-form input {
+  padding: 8px;
+  border: 1px solid #d3d1c7;
+  border-radius: 4px;
+  flex: 1;
+}
+
+button {
+  padding: 6px 12px;
+  border: 1px solid #d3d1c7;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #f1efe8;
+}
+
+td button + button {
+  margin-left: 6px;
+}

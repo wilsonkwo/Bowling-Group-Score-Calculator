@@ -1,0 +1,31 @@
+---
+type: Algorithm
+title: Scoring
+description: How frame scores, total scores, and win/loss group points are calculated.
+resource: src/main/java/sg/sports/bowling/service/ScoreService.java
+tags: [metrics, scoring]
+timestamp: 2026-06-27T00:00:00Z
+---
+# Frame score
+Standard ten-pin rules with lookahead, computed per frame in `calculateFrameScore`:
+- **Strike** (`ball1 == 10`): `10 + next two balls thrown`.
+- **Spare** (`ball1 + ball2 == 10`): `10 + next ball thrown`.
+- **Open frame**: `ball1 + ball2`.
+- **Frame 10**: simply the sum of whatever balls (2 or 3) were thrown.
+
+`[Frame](../entities/frame.md).cumulative_score` is the running sum of `frame_score` through that frame; `[BowlerGame](../entities/bowler_game.md).total_score` is the sum across all 10 frames.
+
+# Frame points (spare / strike bonus)
+Each [Frame](../entities/frame.md) earns bonus points independent of its pin score:
+- **Strike**: `2` points.
+- **Spare**: `1` point.
+- Open frame: `0` points.
+
+# Game points (group win/loss)
+After any bowler's frames are saved, `recalculateResults` reruns for every [BowlerGame](../entities/bowler_game.md) in that [Game](../entities/game.md):
+1. Find `maxScore` among bowlers with a recorded `total_score`.
+2. Bowlers at `maxScore`: result is `WIN` if alone, `DRAW` if tied with others; each gets a share of a fixed **3-point** win bonus (`3 / numberOfWinners`).
+3. Every bowler's `game_points` = sum of their frame points (from spares/strikes) + their win-bonus share if they won/tied for the win, else just their frame points.
+
+# Leaderboard
+`/api/scores/leaderboard?sessionId=` sums each bowler's `game_points` across all games in the session (`BowlerGameRepository.findSessionLeaderboard`), ranking the group standings for that outing.

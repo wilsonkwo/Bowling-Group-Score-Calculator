@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BowlerGame</title>
+<style>body{font-family:Segoe UI,Arial,sans-serif;max-width:860px;margin:0 auto;padding:32px 24px;line-height:1.6;color:#2C2C2A;background:#FAF9F6}
+h1,h2,h3{color:#1a1a18}
+h1{border-bottom:2px solid #E6F1FB;padding-bottom:8px}
+code{background:#F1EFE8;padding:2px 5px;border-radius:4px;font-family:Consolas,monospace;font-size:0.9em}
+pre{background:#F1EFE8;padding:12px 16px;border-radius:6px;overflow-x:auto}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;margin:16px 0}
+th,td{border:1px solid #D3D1C7;padding:8px 12px;text-align:left}
+th{background:#E6F1FB}
+a{color:#185FA5}
+img{max-width:100%}
+.meta{color:#5F5E5A;font-size:0.85em;margin-bottom:24px}
+.back{display:inline-block;margin-bottom:16px;font-size:0.9em}</style>
+</head>
+<body>
+<a class="back" href="index.html">&larr; back to index</a>
+<h1>Table: <code>bowler_game</code></h1>
+<p>Unique on (<code>bowler_id</code>, <code>game_id</code>).</p>
+<table>
+<tr><th>Column</th><th>Type</th><th>Description</th></tr>
+<tr><td><code>id</code></td><td>BIGINT (PK)</td><td>Identity.</td></tr>
+<tr><td><code>bowler_id</code></td><td>BIGINT (FK, not null)</td><td>The <a href="bowler.html">Bowler</a>.</td></tr>
+<tr><td><code>game_id</code></td><td>BIGINT (FK, not null)</td><td>The <a href="game.html">Game</a>.</td></tr>
+<tr><td><code>total_score</code></td><td>INT</td><td>Sum of frame scores; recomputed whenever frames are saved.</td></tr>
+<tr><td><code>result</code></td><td>STRING enum</td><td><code>WIN</code>, <code>LOSS</code>, or <code>DRAW</code>; set after all bowlers&#39; frames are in.</td></tr>
+<tr><td><code>game_points</code></td><td>DOUBLE</td><td>Sum of this bowler&#39;s frame points (spares/strikes) plus a 3-point bonus if they won the game (split evenly among ties).</td></tr>
+</table>
+<h1>Relationships</h1>
+<ul>
+<li>Many-to-one with <a href="bowler.html">Bowler</a> and <a href="game.html">Game</a>.</li>
+<li>One-to-many with <a href="frame.html">Frame</a>.</li>
+</ul>
+<h1>Computed by</h1>
+<p><a href="../metrics/scoring.html">ScoreService.saveFrames / recalculateResults</a>.</p>
+</body>
+</html>

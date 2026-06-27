@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tech Stack</title>
+<style>body{font-family:Segoe UI,Arial,sans-serif;max-width:860px;margin:0 auto;padding:32px 24px;line-height:1.6;color:#2C2C2A;background:#FAF9F6}
+h1,h2,h3{color:#1a1a18}
+h1{border-bottom:2px solid #E6F1FB;padding-bottom:8px}
+code{background:#F1EFE8;padding:2px 5px;border-radius:4px;font-family:Consolas,monospace;font-size:0.9em}
+pre{background:#F1EFE8;padding:12px 16px;border-radius:6px;overflow-x:auto}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;margin:16px 0}
+th,td{border:1px solid #D3D1C7;padding:8px 12px;text-align:left}
+th{background:#E6F1FB}
+a{color:#185FA5}
+img{max-width:100%}
+.meta{color:#5F5E5A;font-size:0.85em;margin-bottom:24px}
+.back{display:inline-block;margin-bottom:16px;font-size:0.9em}</style>
+</head>
+<body>
+<a class="back" href="index.html">&larr; back to index</a>
+<h1>Backend</h1>
+<table>
+<tr><th>Component</th><th>Version</th><th>Notes</th></tr>
+<tr><td>Java</td><td>21</td><td><code>pom.xml</code> <code>java.version</code></td></tr>
+<tr><td>Spring Boot</td><td>3.3.5</td><td>parent POM; pulls in Spring Framework 6.1.14</td></tr>
+<tr><td>Spring Web (<code>spring-boot-starter-web</code>)</td><td>3.3.5</td><td>REST controllers</td></tr>
+<tr><td>Spring Data JPA (<code>spring-boot-starter-data-jpa</code>)</td><td>3.3.5</td><td>repositories/entities, Hibernate ORM 6.5.3</td></tr>
+<tr><td>Spring Security (<code>spring-boot-starter-security</code>)</td><td>3.3.5</td><td>auth, method security; Spring Security 6.3.4</td></tr>
+<tr><td>Spring Boot Validation (<code>spring-boot-starter-validation</code>)</td><td>3.3.5</td><td><code>@Valid</code> request DTOs</td></tr>
+<tr><td>Spring Boot DevTools</td><td>3.3.5</td><td>local dev auto-restart (runtime only)</td></tr>
+<tr><td>JJWT (<code>jjwt-api</code>/<code>jjwt-impl</code>/<code>jjwt-jackson</code>)</td><td>0.12.6</td><td>JWT issuing/verification, see <a href="../src/main/java/sg/sports/bowling/security/JwtUtil.java">JwtUtil</a></td></tr>
+<tr><td>Lombok</td><td>1.18.34</td><td><code>@Data</code>/<code>@Builder</code> boilerplate on entities/DTOs</td></tr>
+</table>
+<h1>Frontend</h1>
+<table>
+<tr><th>Component</th><th>Version</th><th>Notes</th></tr>
+<tr><td>Node.js</td><td>v24.18.0 (dev machine)</td><td>required to run/build the frontend</td></tr>
+<tr><td>React</td><td>19.2.7</td><td>UI library, <code>frontend/</code></td></tr>
+<tr><td>TypeScript</td><td>~6.0.2</td><td>strict-mode app code</td></tr>
+<tr><td>Vite</td><td>8.1.0</td><td>dev server (<code>localhost:5173</code>) and build tool</td></tr>
+<tr><td>react-router-dom</td><td>7.18.0</td><td>client-side routing (<code>/login</code>, <code>/bowlers</code>, protected layout)</td></tr>
+<tr><td>axios</td><td>1.18.1</td><td>API client (<code>frontend/src/api/client.ts</code>), attaches <code>Authorization: Bearer &lt;jwt&gt;</code> from <code>localStorage</code></td></tr>
+</table>
+<p>The frontend is a separate project under <code>frontend/</code>, calling the backend&#39;s REST API directly (see <a href="api/index.html">API</a>). The backend allows CORS from <code>http://localhost:5173</code> only (<code>SecurityConfig.corsConfigurationSource</code>) — update that origin list if the frontend&#39;s dev port or deployed origin changes.</p>
+<h1>Database</h1>
+<table>
+<tr><th>Component</th><th>Version</th><th>Notes</th></tr>
+<tr><td>MariaDB</td><td>server: operator-provided; driver <code>mariadb-java-client</code> 3.3.3</td><td>production/dev datasource, configured in <code>application.properties</code></td></tr>
+<tr><td>H2</td><td>2.2.224</td><td>in-memory DB used only for the <code>test</code> Spring profile (<code>application-test.properties</code>) — see <a href="metrics/scoring.html">scoring.md</a> and <a href="../src/test/java/sg/sports/bowling/BowlingApiIntegrationTest.java">BowlingApiIntegrationTest</a></td></tr>
+</table>
+<h1>Testing</h1>
+<table>
+<tr><th>Component</th><th>Version</th><th>Notes</th></tr>
+<tr><td>JUnit Jupiter</td><td>5.10.5</td><td>via <code>spring-boot-starter-test</code></td></tr>
+<tr><td>Mockito</td><td>5.11.0</td><td>service-level unit tests (<code>ScoreServiceTest</code>)</td></tr>
+<tr><td>AssertJ</td><td>3.25.3</td><td>fluent assertions</td></tr>
+<tr><td>Spring Test / MockMvc</td><td>6.1.14</td><td>endpoint integration tests</td></tr>
+<tr><td>Spring Security Test</td><td>6.3.4</td><td>security-aware test support</td></tr>
+</table>
+<h1>Documentation</h1>
+<table>
+<tr><th>Component</th><th>Notes</th></tr>
+<tr><td>Google Open Knowledge Format (OKF)</td><td>This <code>okf/</code> directory — markdown files with YAML frontmatter, cross-linked, documenting entities, API, and scoring rules. See <a href="index.html">index.md</a>.</td></tr>
+</table>
+<h1>Build &amp; tooling</h1>
+<ul>
+<li>Maven (via <code>mvnw</code>/<code>mvnw.cmd</code> wrapper) — build, test, run.</li>
+<li><code>run.bat</code> — starts the app locally against MariaDB.</li>
+<li><code>runTest.bat</code> — runs the test suite (<code>mvnw test</code>) against the in-memory H2 <code>test</code> profile, no external DB needed.</li>
+</ul>
+</body>
+</html>
