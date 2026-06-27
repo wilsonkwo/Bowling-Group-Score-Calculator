@@ -28,6 +28,9 @@ timestamp: 2026-06-27T00:00:00Z
 | Vite | 8.1.0 | dev server (`localhost:5173`) and build tool |
 | react-router-dom | 7.18.0 | client-side routing (`/login`, `/bowlers`, protected layout) |
 | axios | 1.18.1 | API client (`frontend/src/api/client.ts`), attaches `Authorization: Bearer <jwt>` from `localStorage` |
+| @mantine/core, @mantine/hooks, @mantine/notifications | 9.4.0 | UI component library (AppShell, forms, tables, notifications) — see [frontend.md](frontend.md) |
+| @tabler/icons-react | 3.44.0 | icon set used alongside Mantine components |
+| postcss, postcss-preset-mantine, postcss-simple-vars | 8.5.15 / 1.18.0 / 7.0.1 | PostCSS plugins required by Mantine's stylesheet (`frontend/postcss.config.cjs`) |
 
 The frontend is a separate project under `frontend/`, calling the backend's REST API directly (see [API](api/index.md)). The backend allows CORS from `http://localhost:5173` only (`SecurityConfig.corsConfigurationSource`) — update that origin list if the frontend's dev port or deployed origin changes.
 

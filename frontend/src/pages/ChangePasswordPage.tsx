@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react'
+import { Paper, Title, PasswordInput, Button, Alert, Stack, Container } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 import { changePassword } from '../api/auth'
 
 export function ChangePasswordPage() {
@@ -6,13 +8,11 @@ export function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    setSuccess(false)
 
     if (newPassword !== confirmPassword) {
       setError('New password and confirmation do not match')
@@ -22,7 +22,7 @@ export function ChangePasswordPage() {
     setSubmitting(true)
     try {
       await changePassword(currentPassword, newPassword)
-      setSuccess(true)
+      notifications.show({ color: 'green', title: 'Success', message: 'Password changed successfully.' })
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
@@ -37,45 +37,39 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <div className="change-password-page">
-      <h1>Change password</h1>
-      <form className="change-password-form" onSubmit={handleSubmit}>
-        <label>
-          Current password
-          <input
-            type="password"
+    <Container size={420} mt="xl">
+      <Paper component="form" onSubmit={handleSubmit} withBorder shadow="md" p={30} radius="md">
+        <Title order={2} mb="md">
+          Change password
+        </Title>
+        <Stack>
+          <PasswordInput
+            label="Current password"
             value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
+            onChange={(e) => setCurrentPassword(e.currentTarget.value)}
             required
             autoFocus
           />
-        </label>
-        <label>
-          New password
-          <input
-            type="password"
+          <PasswordInput
+            label="New password"
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={(e) => setNewPassword(e.currentTarget.value)}
             required
             minLength={8}
           />
-        </label>
-        <label>
-          Confirm new password
-          <input
-            type="password"
+          <PasswordInput
+            label="Confirm new password"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => setConfirmPassword(e.currentTarget.value)}
             required
             minLength={8}
           />
-        </label>
-        {error && <p className="form-error">{error}</p>}
-        {success && <p className="form-success">Password changed successfully.</p>}
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Changing...' : 'Change password'}
-        </button>
-      </form>
-    </div>
+          {error && <Alert color="red">{error}</Alert>}
+          <Button type="submit" loading={submitting} mt="sm">
+            Change password
+          </Button>
+        </Stack>
+      </Paper>
+    </Container>
   )
 }

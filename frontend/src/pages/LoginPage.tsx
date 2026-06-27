@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Center, Paper, Title, TextInput, PasswordInput, Button, Alert, Stack } from '@mantine/core'
 import { useAuth } from '../auth/AuthContext'
 
 export function LoginPage() {
@@ -25,22 +26,31 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-page">
-      <form className="login-form" onSubmit={handleSubmit}>
-        <h1>Bowling score calculator</h1>
-        <label>
-          Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
-        </label>
-        <label>
-          Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
-        {error && <p className="form-error">{error}</p>}
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Logging in...' : 'Log in'}
-        </button>
-      </form>
-    </div>
+    <Center mih="100vh">
+      <Paper component="form" onSubmit={handleSubmit} withBorder shadow="md" p={30} radius="md" w={380}>
+        <Title order={2} ta="center" mb="md">
+          Bowling Score Calculator
+        </Title>
+        <Stack>
+          <TextInput
+            label="Username"
+            value={username}
+            onChange={(e) => setUsername(e.currentTarget.value)}
+            required
+            autoFocus
+          />
+          <PasswordInput
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
+            required
+          />
+          {error && <Alert color="red">{error}</Alert>}
+          <Button type="submit" loading={submitting} fullWidth mt="sm">
+            Log in
+          </Button>
+        </Stack>
+      </Paper>
+    </Center>
   )
 }

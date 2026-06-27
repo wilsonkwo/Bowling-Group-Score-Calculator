@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Table, Title, TextInput, Button, Group, ActionIcon, Alert, Loader, Paper, Stack } from '@mantine/core'
+import { IconPencil, IconTrash, IconCheck, IconX } from '@tabler/icons-react'
 import { useAuth } from '../auth/AuthContext'
 import { createBowler, deleteBowler, getBowlers, updateBowler, type Bowler } from '../api/bowlers'
 
@@ -43,67 +45,80 @@ export function BowlersPage() {
     loadBowlers()
   }
 
-  if (loading) return <p>Loading bowlers...</p>
-  if (error) return <p className="form-error">{error}</p>
+  if (loading) return <Loader mt="xl" />
+  if (error) return <Alert color="red">{error}</Alert>
 
   return (
-    <div className="bowlers-page">
-      <h1>Bowlers</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            {isAdmin && <th>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {bowlers.map((bowler) => (
-            <tr key={bowler.id}>
-              <td>
-                {editingId === bowler.id ? (
-                  <input value={editingName} onChange={(e) => setEditingName(e.target.value)} />
-                ) : (
-                  bowler.name
-                )}
-              </td>
-              {isAdmin && (
-                <td>
+    <Stack maw={600}>
+      <Title order={2}>Bowlers</Title>
+      <Paper withBorder shadow="xs">
+        <Table verticalSpacing="sm" highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              {isAdmin && <Table.Th w={120}>Actions</Table.Th>}
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {bowlers.map((bowler) => (
+              <Table.Tr key={bowler.id}>
+                <Table.Td>
                   {editingId === bowler.id ? (
-                    <>
-                      <button type="button" onClick={() => handleSaveEdit(bowler.id)}>Save</button>
-                      <button type="button" onClick={() => setEditingId(null)}>Cancel</button>
-                    </>
+                    <TextInput
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.currentTarget.value)}
+                      size="xs"
+                      autoFocus
+                    />
                   ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingId(bowler.id)
-                          setEditingName(bowler.name)
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button type="button" onClick={() => handleDelete(bowler.id)}>Delete</button>
-                    </>
+                    bowler.name
                   )}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                </Table.Td>
+                {isAdmin && (
+                  <Table.Td>
+                    {editingId === bowler.id ? (
+                      <Group gap="xs">
+                        <ActionIcon color="green" variant="light" onClick={() => handleSaveEdit(bowler.id)}>
+                          <IconCheck size={16} />
+                        </ActionIcon>
+                        <ActionIcon color="gray" variant="light" onClick={() => setEditingId(null)}>
+                          <IconX size={16} />
+                        </ActionIcon>
+                      </Group>
+                    ) : (
+                      <Group gap="xs">
+                        <ActionIcon
+                          variant="light"
+                          onClick={() => {
+                            setEditingId(bowler.id)
+                            setEditingName(bowler.name)
+                          }}
+                        >
+                          <IconPencil size={16} />
+                        </ActionIcon>
+                        <ActionIcon color="red" variant="light" onClick={() => handleDelete(bowler.id)}>
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
+                    )}
+                  </Table.Td>
+                )}
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Paper>
 
       {isAdmin && (
-        <form className="add-bowler-form" onSubmit={handleCreate}>
-          <input
+        <Group component="form" onSubmit={handleCreate} align="flex-end">
+          <TextInput
             placeholder="New bowler name"
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => setNewName(e.currentTarget.value)}
           />
-          <button type="submit">Add bowler</button>
-        </form>
+          <Button type="submit">Add bowler</Button>
+        </Group>
       )}
-    </div>
+    </Stack>
   )
 }

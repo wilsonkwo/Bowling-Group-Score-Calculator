@@ -41,6 +41,9 @@ img{max-width:100%}
 <tr><td>Vite</td><td>8.1.0</td><td>dev server (<code>localhost:5173</code>) and build tool</td></tr>
 <tr><td>react-router-dom</td><td>7.18.0</td><td>client-side routing (<code>/login</code>, <code>/bowlers</code>, protected layout)</td></tr>
 <tr><td>axios</td><td>1.18.1</td><td>API client (<code>frontend/src/api/client.ts</code>), attaches <code>Authorization: Bearer &lt;jwt&gt;</code> from <code>localStorage</code></td></tr>
+<tr><td>@mantine/core, @mantine/hooks, @mantine/notifications</td><td>9.4.0</td><td>UI component library (AppShell, forms, tables, notifications) — see <a href="frontend.html">frontend.md</a></td></tr>
+<tr><td>@tabler/icons-react</td><td>3.44.0</td><td>icon set used alongside Mantine components</td></tr>
+<tr><td>postcss, postcss-preset-mantine, postcss-simple-vars</td><td>8.5.15 / 1.18.0 / 7.0.1</td><td>PostCSS plugins required by Mantine&#39;s stylesheet (<code>frontend/postcss.config.cjs</code>)</td></tr>
 </table>
 <p>The frontend is a separate project under <code>frontend/</code>, calling the backend&#39;s REST API directly (see <a href="api/index.html">API</a>). The backend allows CORS from <code>http://localhost:5173</code> only (<code>SecurityConfig.corsConfigurationSource</code>) — update that origin list if the frontend&#39;s dev port or deployed origin changes.</p>
 <h1>Database</h1>
