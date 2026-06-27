@@ -20,13 +20,16 @@ img{max-width:100%}
 <body>
 <a class="back" href="index.html">&larr; back to index</a>
 <h1>Overview</h1>
-<p>A separate Vite/React/TypeScript project under <code>frontend/</code> (its own <code>package.json</code>, not part of the Maven build). It calls the existing REST API directly — see <a href="api/index.html">API</a> — there is no server-side rendering or backend-for-frontend layer.</p>
+<p>A separate Vite/React/TypeScript project under <code>frontend/</code> (its own <code>package.json</code>, not part of the Maven build). It calls the existing REST API directly — see <a href="api/index.html">API</a> — there is no server-side rendering or backend-for-frontend layer. UI components come from <a href="tech_stack.html">Mantine</a> (<code>@mantine/core</code>, <code>@mantine/hooks</code>, <code>@mantine/notifications</code>) rather than hand-rolled CSS.</p>
 <h1>Structure</h1>
 <ul>
 <li><code>frontend/src/api/</code> — <code>client.ts</code> (axios instance, attaches <code>Authorization: Bearer &lt;jwt&gt;</code> from <code>localStorage</code>, clears it on 401), <code>auth.ts</code> (login/register/<code>changePassword</code>), <code>bowlers.ts</code></li>
 <li><code>frontend/src/auth/AuthContext.tsx</code> — login/logout, persists <code>token</code>/<code>username</code>/<code>roles</code> in <code>localStorage</code>, exposes <code>isAdmin</code></li>
-<li><code>frontend/src/components/</code> — <code>ProtectedRoute</code> (redirects to <code>/login</code> if unauthenticated), <code>Layout</code> (nav + user dropdown menu: Change password, Log out)</li>
-<li><code>frontend/src/pages/</code> — <code>LoginPage</code>, <code>BowlersPage</code> (list/create/edit/delete, admin-gated per <a href="api/bowlers.html">Bowlers API</a> role rules), <code>ChangePasswordPage</code> (calls <a href="api/auth.html"><code>/api/auth/change-password</code></a>)</li>
+<li><code>frontend/src/components/</code> — <code>ProtectedRoute</code> (redirects to <code>/login</code> if unauthenticated), <code>Layout</code> (Mantine <code>AppShell</code> with header + collapsible navbar, <code>Menu</code> for the user dropdown: Change password, Log out)</li>
+<li><code>frontend/src/pages/</code> — <code>LoginPage</code> (Mantine <code>Paper</code>/<code>TextInput</code>/<code>PasswordInput</code>), <code>BowlersPage</code> (Mantine <code>Table</code> with inline edit via <code>ActionIcon</code>, admin-gated per <a href="api/bowlers.html">Bowlers API</a> role rules), <code>ChangePasswordPage</code> (Mantine form, success reported via <code>@mantine/notifications</code>, calls <a href="api/auth.html"><code>/api/auth/change-password</code></a>), <code>SessionsPage</code> (list/create/close <a href="entities/session.html">sessions</a>), <code>GameScorePage</code> (pick a session and game, multi-select bowlers from the bowlers list, enter frame-by-frame scores in a shared scoresheet table so all selected bowlers progress through frames together — see <code>frontend/src/utils/frameRules.ts</code> for ball-input validation and <a href="api/scores.html">Scores API</a> for how frame submission works)</li>
+<li><code>frontend/src/utils/frameRules.ts</code> — pure helpers for 10th-frame bonus-ball rules and building the per-bowler ball arrays to submit</li>
+<li><code>frontend/postcss.config.cjs</code> — required by Mantine: <code>postcss-preset-mantine</code> + <code>postcss-simple-vars</code> for breakpoint variables</li>
+<li><code>frontend/src/main.tsx</code> — wraps the app in <code>MantineProvider</code> + <code>Notifications</code>, imports <code>@mantine/core/styles.css</code> and <code>@mantine/notifications/styles.css</code> before the app&#39;s own <code>index.css</code></li>
 </ul>
 <h1>Running it</h1>
 <pre><code>
@@ -36,6 +39,6 @@ npm run dev      # http://localhost:5173
 </code></pre>
 <p>Requires the backend running on <code>http://localhost:8080</code> (see <a href="tech_stack.html">Tech Stack</a> for the CORS note — only <code>http://localhost:5173</code> is allowed by <code>SecurityConfig</code>).</p>
 <h1>Status</h1>
-<p>Login, change password (via the top-nav user menu), and the Bowlers page (full CRUD) are implemented end-to-end. Sessions/Games/Scores/Leaderboard pages are not yet built — extend following the same <code>api/</code> + <code>pages/</code> pattern.</p>
+<p>Login, change password (via the top-nav user menu), the Bowlers page (full CRUD), Session List (create/close sessions), and Add Game Score (pick session + game, select bowlers, frame-by-frame entry) are implemented end-to-end. A standalone Leaderboard page is not yet built — <code>GET /api/scores/leaderboard</code> is available but nothing in the UI calls it yet.</p>
 </body>
 </html>

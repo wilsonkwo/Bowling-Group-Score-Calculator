@@ -15,6 +15,8 @@ Standard ten-pin rules with lookahead, computed per frame in `calculateFrameScor
 
 `[Frame](../entities/frame.md).cumulative_score` is the running sum of `frame_score` through that frame; `[BowlerGame](../entities/bowler_game.md).total_score` is the sum across all 10 frames.
 
+`saveFrames` always replaces a bowler's full frame list for a game — the frontend's frame-by-frame entry resubmits the growing list every time a frame completes (see [frontend.md](../frontend.md)). The delete-then-insert is followed by an explicit `frameRepository.flush()`: without it, Hibernate can queue the delete and the new insert for the same frame_number in the same flush in the wrong order, violating the `(bowler_game_id, frame_number)` unique constraint.
+
 # Frame points (spare / strike bonus)
 Each [Frame](../entities/frame.md) earns bonus points independent of its pin score:
 - **Strike**: `2` points.

@@ -27,5 +27,7 @@ img{max-width:100%}
 <li><a href="scores.html">Scores</a> — <code>/api/scores/*</code> frame entry and leaderboard</li>
 </ul>
 <p>All endpoints except <code>/api/auth/*</code> require a <code>Authorization: Bearer &lt;jwt&gt;</code> header (see <a href="../../src/main/java/sg/sports/bowling/security/JwtAuthFilter.java">JwtAuthFilter</a>). Write operations on bowlers and sessions require <code>ROLE_ADMIN</code>.</p>
+<h1>Error responses</h1>
+<p>A <code>400 Bad Request</code> with <code>{ "message": "&lt;reason&gt;" }</code> is returned for invalid input or a not-found/duplicate lookup (e.g. "Bowler not found: 5", "Bowler already exists: Alice") — see <a href="../../src/main/java/sg/sports/bowling/config/GlobalExceptionHandler.java">GlobalExceptionHandler</a>, which translates any uncaught <code>IllegalArgumentException</code> from the service layer. This exists because Spring Boot&#39;s default behavior — forwarding uncaught exceptions to <code>/error</code> — collided with this app&#39;s security config: that internal forward has no <code>Authorization</code> header, so without the handler (and <code>/error</code> being permitted in <code>SecurityConfig</code>), every such error was masked as a misleading <code>401 Full authentication is required</code> instead of its real status.</p>
 </body>
 </html>

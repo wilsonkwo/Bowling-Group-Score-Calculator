@@ -3,6 +3,8 @@ package sg.sports.bowling.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sg.sports.bowling.dto.response.FrameResponse;
+import sg.sports.bowling.dto.response.ParticipantResponse;
 import sg.sports.bowling.entity.*;
 import sg.sports.bowling.entity.BowlerGame.GameResult;
 import sg.sports.bowling.repository.*;
@@ -39,8 +41,12 @@ public class ScoreService {
                 .orElseGet(() -> BowlerGame.builder().bowler(bowler).game(game).build());
         bowlerGame = bowlerGameRepository.save(bowlerGame);
 
-        // Remove existing frames then rebuild
+        // Remove existing frames then rebuild. The flush forces the DELETE to hit the
+        // database before the new frames are inserted — without it, Hibernate may queue
+        // both for the same flush in an order that violates the (bowler_game_id, frame_number)
+        // unique constraint when a frame_number is being replaced.
         frameRepository.deleteAllByBowlerGame(bowlerGame);
+        frameRepository.flush();
 
         List<Frame> frames = buildFrames(bowlerGame, balls);
         frameRepository.saveAll(frames);
@@ -68,6 +74,28 @@ public class ScoreService {
 
     public List<Object[]> getSessionLeaderboard(Long sessionId) {
         return bowlerGameRepository.findSessionLeaderboard(sessionId);
+    }
+
+    /**
+     * List every bowler currently entered in a game, with their frames so far.
+     * Used to resume frame-by-frame entry for a game already in progress.
+     */
+    public List<ParticipantResponse> getParticipants(Long gameId) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new IllegalArgumentException("Game not found: " + gameId));
+
+        return bowlerGameRepository.findByGame(game).stream()
+                .map(bg -> ParticipantResponse.builder()
+                        .bowlerId(bg.getBowler().getId())
+                        .bowlerName(bg.getBowler().getName())
+                        .totalScore(bg.getTotalScore())
+                        .gamePoints(bg.getGamePoints())
+                        .result(bg.getResult())
+                        .frames(frameRepository.findByBowlerGameOrderByFrameNumberAsc(bg).stream()
+                                .map(FrameResponse::from)
+                                .toList())
+                        .build())
+                .toList();
     }
 
     // -----------------------------------------------------------------------

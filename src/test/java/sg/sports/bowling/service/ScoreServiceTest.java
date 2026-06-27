@@ -160,6 +160,27 @@ class ScoreServiceTest {
         assertThat(bobGame.getGamePoints()).isEqualTo(1.5);
     }
 
+    @Test
+    void getParticipantsReturnsEveryBowlerInTheGameWithTheirFrames() {
+        Bowler bob = Bowler.builder().id(2L).name("Bob").build();
+        BowlerGame bobGame = BowlerGame.builder().id(101L).bowler(bob).game(game)
+                .totalScore(70).build();
+        when(bowlerGameRepository.findByGame(game)).thenReturn(Arrays.asList(bowlerGame, bobGame));
+        when(frameRepository.findByBowlerGameOrderByFrameNumberAsc(bowlerGame))
+                .thenReturn(List.of(frameWithPoints(2.0)));
+        when(frameRepository.findByBowlerGameOrderByFrameNumberAsc(bobGame))
+                .thenReturn(List.of(frameWithPoints(0.0)));
+
+        List<sg.sports.bowling.dto.response.ParticipantResponse> participants = scoreService.getParticipants(10L);
+
+        assertThat(participants).hasSize(2);
+        assertThat(participants.get(0).getBowlerId()).isEqualTo(1L);
+        assertThat(participants.get(0).getBowlerName()).isEqualTo("Alice");
+        assertThat(participants.get(0).getFrames()).hasSize(1);
+        assertThat(participants.get(1).getBowlerId()).isEqualTo(2L);
+        assertThat(participants.get(1).getTotalScore()).isEqualTo(70);
+    }
+
     private Frame frameWithPoints(double points) {
         Frame f = Frame.builder().frameNumber(1).build();
         f.setFramePoints(points);

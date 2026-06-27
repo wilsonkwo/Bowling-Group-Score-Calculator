@@ -1,7 +1,7 @@
 ---
 type: JPA Entity
 title: Game
-description: A single numbered game within a BowlingSession, carrying the win-point value for that game.
+description: A single numbered game within a BowlingSession.
 resource: src/main/java/sg/sports/bowling/entity/Game.java
 tags: [entities]
 timestamp: 2026-06-27T00:00:00Z

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import sg.sports.bowling.dto.request.FrameSubmitRequest;
 import sg.sports.bowling.dto.response.FrameResponse;
 import sg.sports.bowling.dto.response.LeaderboardEntry;
+import sg.sports.bowling.dto.response.ParticipantResponse;
 import sg.sports.bowling.entity.Bowler;
 import sg.sports.bowling.entity.BowlerGame;
 import sg.sports.bowling.entity.Frame;
@@ -52,6 +53,16 @@ public class ScoreController {
 
         List<Frame> frames = scoreService.getFrames(bowlerId, gameId);
         return ResponseEntity.ok(frames.stream().map(FrameResponse::from).toList());
+    }
+
+    /**
+     * List every bowler entered in a game so far, with their frames.
+     * Used to resume frame-by-frame entry for a game already in progress.
+     * GET /api/scores/games/{gameId}/participants
+     */
+    @GetMapping("/games/{gameId}/participants")
+    public ResponseEntity<List<ParticipantResponse>> getParticipants(@PathVariable Long gameId) {
+        return ResponseEntity.ok(scoreService.getParticipants(gameId));
     }
 
     /**

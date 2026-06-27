@@ -149,6 +149,19 @@ class BowlingApiIntegrationTest {
     }
 
     @Test
+    void creatingADuplicateBowlerReturnsBadRequestNotUnauthorized() throws Exception {
+        String adminToken = loginAsAdmin();
+        createBowler(adminToken, "Gina");
+
+        mockMvc.perform(post("/api/bowlers")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"name\": \"Gina\" }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Bowler already exists: Gina"));
+    }
+
+    @Test
     void nonAdminCannotCreateABowler() throws Exception {
         registerUser("dave", "dave@example.com", "password123");
         String token = loginAndGetToken("dave", "password123");
@@ -210,6 +223,12 @@ class BowlingApiIntegrationTest {
                 .andExpect(jsonPath("$[0].framePoints").value(2.0))
                 .andExpect(jsonPath("$[9].cumulativeScore").value(300));
 
+        mockMvc.perform(get("/api/scores/games/" + gameId + "/participants")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.bowlerId == " + aliceId + ")].totalScore").value(300))
+                .andExpect(jsonPath("$[?(@.bowlerId == " + bobId + ")].totalScore").value(70));
+
         MvcResult leaderboardResult = mockMvc.perform(get("/api/scores/leaderboard")
                         .header("Authorization", "Bearer " + adminToken)
                         .param("sessionId", String.valueOf(sessionId)))
@@ -227,6 +246,39 @@ class BowlingApiIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CLOSED"));
+    }
+
+    @Test
+    void resubmittingABowlersGrowingFrameListDoesNotConflictWithPreviousFrames() throws Exception {
+        String adminToken = loginAsAdmin();
+        long aliceId = createBowler(adminToken, "Hana");
+
+        MvcResult sessionResult = mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-06-27\" }"))
+                .andExpect(status().isOk())
+                .andReturn();
+        long sessionId = readField(sessionResult, "id");
+
+        MvcResult gameResult = mockMvc.perform(post("/api/sessions/" + sessionId + "/games")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        long gameId = readField(gameResult, "id");
+
+        // Frame-by-frame entry: submit frame 1, then resubmit frames 1+2, as the
+        // "Add game score" page does each time a bowler completes another frame.
+        submitFrames(adminToken, aliceId, gameId, "[[10]]");
+        submitFrames(adminToken, aliceId, gameId, "[[10],[7,2]]");
+
+        mockMvc.perform(get("/api/scores/frames")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("bowlerId", String.valueOf(aliceId))
+                        .param("gameId", String.valueOf(gameId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[1].cumulativeScore").value(28));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────

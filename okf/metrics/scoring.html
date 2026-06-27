@@ -28,6 +28,7 @@ img{max-width:100%}
 <li><strong>Frame 10</strong>: simply the sum of whatever balls (2 or 3) were thrown.</li>
 </ul>
 <p><code><a href="../entities/frame.html">Frame</a>.cumulative_score</code> is the running sum of <code>frame_score</code> through that frame; <code><a href="../entities/bowler_game.html">BowlerGame</a>.total_score</code> is the sum across all 10 frames.</p>
+<p><code>saveFrames</code> always replaces a bowler&#39;s full frame list for a game — the frontend&#39;s frame-by-frame entry resubmits the growing list every time a frame completes (see <a href="../frontend.html">frontend.md</a>). The delete-then-insert is followed by an explicit <code>frameRepository.flush()</code>: without it, Hibernate can queue the delete and the new insert for the same frame_number in the same flush in the wrong order, violating the <code>(bowler_game_id, frame_number)</code> unique constraint.</p>
 <h1>Frame points (spare / strike bonus)</h1>
 <p>Each <a href="../entities/frame.html">Frame</a> earns bonus points independent of its pin score:</p>
 <ul>
