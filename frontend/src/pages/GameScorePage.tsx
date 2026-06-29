@@ -7,7 +7,6 @@ import {
   Stack,
   Paper,
   Table,
-  NumberInput,
   MultiSelect,
   Badge,
   Loader,
@@ -20,11 +19,15 @@ import { useAuth } from '../auth/AuthContext'
 import { getBowlers, type Bowler } from '../api/bowlers'
 import { addGame, getGames, getOpenSessions, type BowlingSession, type Game } from '../api/sessions'
 import { getParticipants, submitFrames, type ParticipantResponse } from '../api/scores'
+import { BallCell } from '../components/BallCell'
 import {
   framesToSubmit,
+  fullPinSet,
+  inPlayPinsForBall2,
+  inPlayPinsForBall3,
+  isFrameComplete,
+  isSpare,
   isThirdBallEnabled,
-  maxBall2,
-  maxBall3,
   type FrameInput,
 } from '../utils/frameRules'
 
@@ -47,6 +50,7 @@ export function GameScorePage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [openCellKey, setOpenCellKey] = useState<string | null>(null)
 
   useEffect(() => {
     getOpenSessions().then(setSessions).catch(() => setError('Failed to load sessions'))
@@ -121,13 +125,28 @@ export function GameScorePage() {
     })
   }
 
-  function updateBall(bowlerId: number, frameNumber: number, field: 'ball1' | 'ball2' | 'ball3', value: number | undefined) {
+  function updateBall(
+    bowlerId: number,
+    frameNumber: number,
+    field: 'ball1' | 'ball2' | 'ball3',
+    value: number | undefined,
+    standingPins: Set<number>,
+  ) {
     setScores((prev) => {
       const bowlerFrames = { ...(prev[bowlerId] ?? {}) }
       const frame = { ...(bowlerFrames[frameNumber] ?? {}) }
       frame[field] = value
-      if (field === 'ball1' && value === 10 && frameNumber !== 10) {
+      frame[`${field}Standing`] = standingPins
+      // Changing an earlier ball invalidates whatever was already entered for later
+      // balls in the frame (their max pins / in-play pins depend on this one).
+      if (field === 'ball1') {
         frame.ball2 = undefined
+        frame.ball2Standing = undefined
+        frame.ball3 = undefined
+        frame.ball3Standing = undefined
+      } else if (field === 'ball2') {
+        frame.ball3 = undefined
+        frame.ball3Standing = undefined
       }
       bowlerFrames[frameNumber] = frame
       return { ...prev, [bowlerId]: bowlerFrames }
@@ -239,47 +258,58 @@ export function GameScorePage() {
                             const frame = bowlerFrames[frameNumber] ?? {}
                             const isTenth = frameNumber === 10
                             const ball1IsStrike = frame.ball1 === 10
+                            const previousFrameComplete =
+                              frameNumber === 1 || isFrameComplete(frameNumber - 1, bowlerFrames[frameNumber - 1] ?? {})
                             return (
                               <Table.Td key={frameNumber}>
                                 <Group gap={2} wrap="nowrap" justify="center">
-                                  <NumberInput
-                                    value={frame.ball1 ?? ''}
-                                    onChange={(v) =>
-                                      updateBall(bowlerId, frameNumber, 'ball1', typeof v === 'number' ? v : undefined)
-                                    }
-                                    min={0}
-                                    max={10}
-                                    w={40}
-                                    size="xs"
-                                    hideControls
-                                    disabled={!isAdmin}
+                                  <BallCell
+                                    value={frame.ball1}
+                                    displayValue={frame.ball1 === 10 ? 'X' : undefined}
+                                    inPlayPins={fullPinSet()}
+                                    priorStanding={frame.ball1Standing}
+                                    disabled={!isAdmin || !previousFrameComplete}
+                                    opened={openCellKey === `${bowlerId}-${frameNumber}-ball1`}
+                                    onOpen={() => setOpenCellKey(`${bowlerId}-${frameNumber}-ball1`)}
+                                    onClose={() => setOpenCellKey(null)}
+                                    onCommit={(v, pins) => updateBall(bowlerId, frameNumber, 'ball1', v, pins)}
                                   />
                                   {!(ball1IsStrike && !isTenth) && (
-                                    <NumberInput
-                                      value={frame.ball2 ?? ''}
-                                      onChange={(v) =>
-                                        updateBall(bowlerId, frameNumber, 'ball2', typeof v === 'number' ? v : undefined)
+                                    <BallCell
+                                      value={frame.ball2}
+                                      displayValue={
+                                        isSpare(frame.ball1, frame.ball2)
+                                          ? '/'
+                                          : frame.ball2 === 10
+                                            ? 'X'
+                                            : undefined
                                       }
-                                      min={0}
-                                      max={maxBall2(frame.ball1)}
-                                      w={40}
-                                      size="xs"
-                                      hideControls
-                                      disabled={!isAdmin || frame.ball1 === undefined}
+                                      inPlayPins={inPlayPinsForBall2(frameNumber, frame)}
+                                      priorStanding={frame.ball2Standing}
+                                      disabled={!isAdmin || !previousFrameComplete || frame.ball1 === undefined}
+                                      opened={openCellKey === `${bowlerId}-${frameNumber}-ball2`}
+                                      onOpen={() => setOpenCellKey(`${bowlerId}-${frameNumber}-ball2`)}
+                                      onClose={() => setOpenCellKey(null)}
+                                      onCommit={(v, pins) => updateBall(bowlerId, frameNumber, 'ball2', v, pins)}
                                     />
                                   )}
                                   {isTenth && isThirdBallEnabled(frameNumber, frame) && (
-                                    <NumberInput
-                                      value={frame.ball3 ?? ''}
-                                      onChange={(v) =>
-                                        updateBall(bowlerId, frameNumber, 'ball3', typeof v === 'number' ? v : undefined)
+                                    <BallCell
+                                      value={frame.ball3}
+                                      displayValue={
+                                        frame.ball1 === 10 && isSpare(frame.ball2, frame.ball3)
+                                          ? '/'
+                                          : frame.ball3 === 10
+                                            ? 'X'
+                                            : undefined
                                       }
-                                      min={0}
-                                      max={maxBall3(frame)}
-                                      w={40}
-                                      size="xs"
-                                      hideControls
+                                      inPlayPins={inPlayPinsForBall3(frame)}
+                                      priorStanding={frame.ball3Standing}
                                       disabled={!isAdmin}
+                                      opened={openCellKey === `${bowlerId}-${frameNumber}-ball3`}
+                                      onOpen={() => setOpenCellKey(`${bowlerId}-${frameNumber}-ball3`)}
+                                      onClose={() => setOpenCellKey(null)}
+                                      onCommit={(v, pins) => updateBall(bowlerId, frameNumber, 'ball3', v, pins)}
                                     />
                                   )}
                                 </Group>

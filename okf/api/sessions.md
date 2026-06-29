@@ -13,7 +13,9 @@ timestamp: 2026-06-27T00:00:00Z
 | GET | `/` | any authenticated | — | list of [BowlingSession](../entities/session.md) |
 | GET | `/open` | any authenticated | — | sessions with `status = OPEN` |
 | GET | `/{id}` | any authenticated | — | a session |
-| POST | `/` | ROLE_ADMIN | `{ sessionDate, location?, notes? }` | created session (`status = OPEN`) |
+| POST | `/` | ROLE_ADMIN | `{ sessionDate, timeSlot, location?, notes? }` | created session (`status = OPEN`) |
 | POST | `/{id}/close` | ROLE_ADMIN | — | session with `status = CLOSED` |
 | GET | `/{id}/games` | any authenticated | — | list of [Game](../entities/game.md) for the session |
 | POST | `/{id}/games` | ROLE_ADMIN | — | created Game |
+
+`timeSlot` must be one of `MORNING`, `AFTERNOON`, `EVENING` ([BowlingSession.TimeSlot](../entities/session.md)) — missing or invalid value returns `400`.

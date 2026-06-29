@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$raw = [Console]::In.ReadToEnd(); $data = $raw | ConvertFrom-Json; $line = \"$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $($data.prompt)\"; Add-Content -Path 'C:\\Users\\wilso\\Claude\\Projects\\Bowling Group Score Calculator\\.claude\\prompts.log' -Value $line",
+            "shell": "powershell"
+          }
+        ]
+      }
+    ]
+  }
+}

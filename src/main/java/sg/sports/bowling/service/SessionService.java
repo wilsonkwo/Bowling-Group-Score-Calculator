@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sg.sports.bowling.entity.BowlingSession;
 import sg.sports.bowling.entity.BowlingSession.SessionStatus;
+import sg.sports.bowling.entity.BowlingSession.TimeSlot;
 import sg.sports.bowling.entity.Game;
 import sg.sports.bowling.repository.BowlingSessionRepository;
 import sg.sports.bowling.repository.GameRepository;
@@ -33,11 +34,15 @@ public class SessionService {
     }
 
     @Transactional
-    public BowlingSession createSession(LocalDate date, String location, String notes) {
+    public BowlingSession createSession(LocalDate date, String location, String notes, TimeSlot timeSlot) {
+        if (timeSlot == null) {
+            throw new IllegalArgumentException("timeSlot is required");
+        }
         BowlingSession session = BowlingSession.builder()
                 .sessionDate(date)
                 .location(location)
                 .notes(notes)
+                .timeSlot(timeSlot)
                 .build();
         return sessionRepository.save(session);
     }

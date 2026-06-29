@@ -2,6 +2,26 @@ export interface FrameInput {
   ball1?: number
   ball2?: number
   ball3?: number
+  /**
+   * Pins left standing after this throw (frontend-only, not sent to the backend —
+   * only used so the next throw's pin rack can highlight the exact pins still up,
+   * instead of guessing from the raw count). Undefined when the value came from the
+   * backend rather than being set through the rack in this session.
+   */
+  ball1Standing?: Set<number>
+  ball2Standing?: Set<number>
+  ball3Standing?: Set<number>
+}
+
+const ALL_PINS: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+export function fullPinSet(): Set<number> {
+  return new Set(ALL_PINS)
+}
+
+/** Best-effort guess at which pins are still standing when we only know the count (no rack-tracked identity). */
+function lowestPins(count: number): Set<number> {
+  return new Set(ALL_PINS.slice(0, count))
 }
 
 /** Max pins allowed for ball2 of a frame, given ball1. */
@@ -23,6 +43,26 @@ export function maxBall3(frame: FrameInput): number {
     return 10 - frame.ball2
   }
   return 10
+}
+
+/** Exactly which pins are still standing as ball2 begins. */
+export function inPlayPinsForBall2(frameNumber: number, frame: FrameInput): Set<number> {
+  // 10th frame: a strike on ball1 re-racks a fresh 10 for ball2 (up to 3 throws total).
+  if (frameNumber === 10 && frame.ball1 === 10) return fullPinSet()
+  return frame.ball1Standing ?? lowestPins(maxBall2(frame.ball1))
+}
+
+/** Exactly which pins are still standing as the 10th frame's bonus 3rd ball begins. */
+export function inPlayPinsForBall3(frame: FrameInput): Set<number> {
+  if (frame.ball1 === 10 && frame.ball2 !== undefined && frame.ball2 < 10) {
+    return frame.ball2Standing ?? lowestPins(maxBall3(frame))
+  }
+  return fullPinSet()
+}
+
+/** Whether ball2 completed a spare (two balls at a fresh rack summing to 10). */
+export function isSpare(ball1: number | undefined, ball2: number | undefined): boolean {
+  return ball1 !== undefined && ball1 !== 10 && ball2 !== undefined && ball1 + ball2 === 10
 }
 
 /** Whether a frame has enough balls entered to be considered "done" (no more input expected). */

@@ -120,14 +120,15 @@ class ScoreServiceTest {
     @Test
     void soleWinnerGetsFixedThreePointBonusPlusFramePoints() {
         // Alice bowls a spare in frame 1 (76 total); Bob's recorded score is lower, so Alice wins outright.
+        // Both have all 10 frames in (game complete), so the win bonus is actually decided.
         Bowler bob = Bowler.builder().id(2L).name("Bob").build();
         BowlerGame bobGame = BowlerGame.builder().id(101L).bowler(bob).game(game)
                 .totalScore(50).build();
         when(bowlerGameRepository.findByGame(game)).thenReturn(Arrays.asList(bowlerGame, bobGame));
         when(frameRepository.findByBowlerGameOrderByFrameNumberAsc(bowlerGame))
-                .thenReturn(List.of(frameWithPoints(1.0)));
+                .thenReturn(completeFrames(1.0));
         when(frameRepository.findByBowlerGameOrderByFrameNumberAsc(bobGame))
-                .thenReturn(List.of(frameWithPoints(0.0)));
+                .thenReturn(completeFrames(0.0));
 
         List<int[]> balls = allOpenFrames();
         balls.set(0, new int[]{6, 4});
@@ -145,7 +146,7 @@ class ScoreServiceTest {
         BowlerGame bobGame = BowlerGame.builder().id(101L).bowler(bob).game(game).build();
         when(bowlerGameRepository.findByGame(game)).thenReturn(Arrays.asList(bowlerGame, bobGame));
         when(frameRepository.findByBowlerGameOrderByFrameNumberAsc(any(BowlerGame.class)))
-                .thenReturn(List.of(frameWithPoints(0.0)));
+                .thenReturn(completeFrames(0.0));
 
         // Both bowl the same open frames -> same total score -> tie
         scoreService.saveFrames(1L, 10L, allOpenFrames());
@@ -185,6 +186,18 @@ class ScoreServiceTest {
         Frame f = Frame.builder().frameNumber(1).build();
         f.setFramePoints(points);
         return f;
+    }
+
+    /** A full 10-frame, all-open-frames game (so isGameComplete sees it as finished), carrying framePoints on the 10th frame. */
+    private List<Frame> completeFrames(double framePoints) {
+        List<Frame> frames = new ArrayList<>();
+        for (int i = 1; i <= 9; i++) {
+            frames.add(Frame.builder().frameNumber(i).ball1(3).ball2(4).build());
+        }
+        Frame last = Frame.builder().frameNumber(10).ball1(3).ball2(4).build();
+        last.setFramePoints(framePoints);
+        frames.add(last);
+        return frames;
     }
 
     private void verifyFramesSaved() {

@@ -25,10 +25,11 @@ img{max-width:100%}
 <tr><td>GET</td><td><code>/</code></td><td>any authenticated</td><td>—</td><td>list of <a href="../entities/session.html">BowlingSession</a></td></tr>
 <tr><td>GET</td><td><code>/open</code></td><td>any authenticated</td><td>—</td><td>sessions with <code>status = OPEN</code></td></tr>
 <tr><td>GET</td><td><code>/{id}</code></td><td>any authenticated</td><td>—</td><td>a session</td></tr>
-<tr><td>POST</td><td><code>/</code></td><td>ROLE_ADMIN</td><td><code>{ sessionDate, location?, notes? }</code></td><td>created session (<code>status = OPEN</code>)</td></tr>
+<tr><td>POST</td><td><code>/</code></td><td>ROLE_ADMIN</td><td><code>{ sessionDate, timeSlot, location?, notes? }</code></td><td>created session (<code>status = OPEN</code>)</td></tr>
 <tr><td>POST</td><td><code>/{id}/close</code></td><td>ROLE_ADMIN</td><td>—</td><td>session with <code>status = CLOSED</code></td></tr>
 <tr><td>GET</td><td><code>/{id}/games</code></td><td>any authenticated</td><td>—</td><td>list of <a href="../entities/game.html">Game</a> for the session</td></tr>
 <tr><td>POST</td><td><code>/{id}/games</code></td><td>ROLE_ADMIN</td><td>—</td><td>created Game</td></tr>
 </table>
+<p><code>timeSlot</code> must be one of <code>MORNING</code>, <code>AFTERNOON</code>, <code>EVENING</code> (<a href="../entities/session.html">BowlingSession.TimeSlot</a>) — missing or invalid value returns <code>400</code>.</p>
 </body>
 </html>

@@ -1,11 +1,14 @@
 import { api } from './client'
 
+export type TimeSlot = 'MORNING' | 'AFTERNOON' | 'EVENING'
+
 export interface BowlingSession {
   id: number
   sessionDate: string
   location?: string
   notes?: string
   status: 'OPEN' | 'CLOSED'
+  timeSlot?: TimeSlot
 }
 
 export interface Game {
@@ -22,8 +25,8 @@ export function getOpenSessions() {
   return api.get<BowlingSession[]>('/api/sessions/open').then((r) => r.data)
 }
 
-export function createSession(sessionDate: string, location?: string, notes?: string) {
-  return api.post<BowlingSession>('/api/sessions', { sessionDate, location, notes }).then((r) => r.data)
+export function createSession(sessionDate: string, timeSlot: TimeSlot, location?: string, notes?: string) {
+  return api.post<BowlingSession>('/api/sessions', { sessionDate, timeSlot, location, notes }).then((r) => r.data)
 }
 
 export function closeSession(id: number) {

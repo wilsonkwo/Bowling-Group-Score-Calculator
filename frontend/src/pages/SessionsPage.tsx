@@ -6,14 +6,26 @@ import {
   Stack,
   Group,
   TextInput,
+  Select,
   Button,
   Badge,
   Loader,
   Alert,
+  Chip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useAuth } from '../auth/AuthContext'
-import { closeSession, createSession, getSessions, type BowlingSession } from '../api/sessions'
+import { closeSession, createSession, getSessions, type BowlingSession, type TimeSlot } from '../api/sessions'
+
+const TIME_SLOT_LABELS: Record<TimeSlot, string> = {
+  MORNING: 'Morning (8am-12pm)',
+  AFTERNOON: 'Afternoon (1pm-6pm)',
+  EVENING: 'Evening (8pm-12am)',
+}
+const TIME_SLOT_OPTIONS = (Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((value) => ({
+  value,
+  label: TIME_SLOT_LABELS[value],
+}))
 
 export function SessionsPage() {
   const { isAdmin } = useAuth()
@@ -22,9 +34,13 @@ export function SessionsPage() {
   const [error, setError] = useState<string | null>(null)
 
   const [sessionDate, setSessionDate] = useState('')
+  const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null)
   const [location, setLocation] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL')
+  const filteredSessions = sessions.filter((s) => statusFilter === 'ALL' || s.status === statusFilter)
 
   function loadSessions() {
     setLoading(true)
@@ -40,11 +56,12 @@ export function SessionsPage() {
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault()
-    if (!sessionDate) return
+    if (!sessionDate || !timeSlot) return
     setSubmitting(true)
     try {
-      await createSession(sessionDate, location || undefined, notes || undefined)
+      await createSession(sessionDate, timeSlot, location || undefined, notes || undefined)
       setSessionDate('')
+      setTimeSlot(null)
       setLocation('')
       setNotes('')
       loadSessions()
@@ -71,20 +88,30 @@ export function SessionsPage() {
     <Stack maw={700}>
       <Title order={2}>Sessions</Title>
 
+      <Chip.Group value={statusFilter} onChange={(v) => setStatusFilter(v as 'ALL' | 'OPEN' | 'CLOSED')}>
+        <Group gap="xs">
+          <Chip value="ALL">All</Chip>
+          <Chip value="OPEN">Open</Chip>
+          <Chip value="CLOSED">Closed</Chip>
+        </Group>
+      </Chip.Group>
+
       <Paper withBorder shadow="xs">
         <Table verticalSpacing="sm" highlightOnHover>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Date</Table.Th>
+              <Table.Th>Time Slot</Table.Th>
               <Table.Th>Location</Table.Th>
               <Table.Th>Status</Table.Th>
               {isAdmin && <Table.Th w={100}>Actions</Table.Th>}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {sessions.map((s) => (
+            {filteredSessions.map((s) => (
               <Table.Tr key={s.id}>
                 <Table.Td>{s.sessionDate}</Table.Td>
+                <Table.Td>{s.timeSlot ? TIME_SLOT_LABELS[s.timeSlot] : '-'}</Table.Td>
                 <Table.Td>{s.location ?? '-'}</Table.Td>
                 <Table.Td>
                   <Badge color={s.status === 'OPEN' ? 'green' : 'gray'}>{s.status}</Badge>
@@ -116,6 +143,15 @@ export function SessionsPage() {
               value={sessionDate}
               onChange={(e) => setSessionDate(e.currentTarget.value)}
               required
+            />
+            <Select
+              label="Time slot"
+              placeholder="Select a time slot"
+              data={TIME_SLOT_OPTIONS}
+              value={timeSlot}
+              onChange={(v) => setTimeSlot(v as TimeSlot | null)}
+              required
+              w={220}
             />
             <TextInput
               label="Location"

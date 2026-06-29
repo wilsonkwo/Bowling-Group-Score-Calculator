@@ -179,10 +179,19 @@ public class ScoreService {
      * After all bowlers' scores are in for a game, determine win/loss and assign points.
      * Points = sum of this bowler's frame points (spares/strikes) + a fixed 3-point bonus
      * for the game winner, split evenly if multiple bowlers tie for the highest score.
+     *
+     * Win/loss/draw is only decided once every participant has finished all 10 frames —
+     * this runs after every single frame save (see saveFrames), so comparing partial
+     * totals mid-game would hand out a misleading early win bonus (e.g. two bowlers tied
+     * on just frame 1 would each show a "DRAW" with a split bonus, well before the game
+     * is actually over). Until then, gamePoints is just the frame points earned so far.
      */
     private void recalculateResults(Game game) {
         List<BowlerGame> participants = bowlerGameRepository.findByGame(game);
         if (participants.isEmpty()) return;
+
+        boolean allComplete = participants.stream()
+                .allMatch(bg -> isGameComplete(frameRepository.findByBowlerGameOrderByFrameNumberAsc(bg)));
 
         int maxScore = participants.stream()
                 .filter(bg -> bg.getTotalScore() != null)
@@ -203,7 +212,10 @@ public class ScoreService {
                     .mapToDouble(Frame::getFramePoints)
                     .sum();
 
-            if (bg.getTotalScore() == maxScore) {
+            if (!allComplete) {
+                bg.setResult(null);
+                bg.setGamePoints(framePoints);
+            } else if (bg.getTotalScore() == maxScore) {
                 bg.setResult(winnersCount > 1 ? GameResult.DRAW : GameResult.WIN);
                 bg.setGamePoints(framePoints + winShare);
             } else {
@@ -212,5 +224,15 @@ public class ScoreService {
             }
         }
         bowlerGameRepository.saveAll(participants);
+    }
+
+    /** Whether a bowler has thrown every ball they're entitled to across all 10 frames. */
+    private boolean isGameComplete(List<Frame> frames) {
+        if (frames.size() != 10) return false;
+        Frame tenth = frames.get(9);
+        if (tenth.getBall1() == null) return false;
+        boolean strikeOrSpare = tenth.getBall1() == 10
+                || (tenth.getBall2() != null && tenth.getBall1() + tenth.getBall2() == 10);
+        return strikeOrSpare ? tenth.getBall3() != null : tenth.getBall2() != null;
     }
 }

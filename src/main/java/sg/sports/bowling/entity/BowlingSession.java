@@ -31,7 +31,16 @@ public class BowlingSession {
     @Builder.Default
     private SessionStatus status = SessionStatus.OPEN;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "time_slot")
+    private TimeSlot timeSlot;
+
     public enum SessionStatus {
         OPEN, CLOSED
+    }
+
+    /** Column is nullable to tolerate sessions created before this field existed. */
+    public enum TimeSlot {
+        MORNING, AFTERNOON, EVENING
     }
 }

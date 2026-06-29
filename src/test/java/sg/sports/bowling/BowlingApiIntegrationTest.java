@@ -185,9 +185,10 @@ class BowlingApiIntegrationTest {
         MvcResult sessionResult = mockMvc.perform(post("/api/sessions")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"sessionDate\": \"2026-06-27\", \"location\": \"Downtown Lanes\" }"))
+                        .content("{ \"sessionDate\": \"2026-06-27\", \"location\": \"Downtown Lanes\", \"timeSlot\": \"MORNING\" }"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("OPEN"))
+                .andExpect(jsonPath("$.timeSlot").value("MORNING"))
                 .andReturn();
         long sessionId = readField(sessionResult, "id");
 
@@ -249,6 +250,23 @@ class BowlingApiIntegrationTest {
     }
 
     @Test
+    void creatingSessionWithoutTimeSlotIsRejected() throws Exception {
+        String adminToken = loginAsAdmin();
+
+        mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-06-27\" }"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-06-27\", \"timeSlot\": \"NIGHT_OWL\" }"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void resubmittingABowlersGrowingFrameListDoesNotConflictWithPreviousFrames() throws Exception {
         String adminToken = loginAsAdmin();
         long aliceId = createBowler(adminToken, "Hana");
@@ -256,7 +274,7 @@ class BowlingApiIntegrationTest {
         MvcResult sessionResult = mockMvc.perform(post("/api/sessions")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"sessionDate\": \"2026-06-27\" }"))
+                        .content("{ \"sessionDate\": \"2026-06-27\", \"timeSlot\": \"EVENING\" }"))
                 .andExpect(status().isOk())
                 .andReturn();
         long sessionId = readField(sessionResult, "id");
@@ -279,6 +297,64 @@ class BowlingApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[1].cumulativeScore").value(28));
+    }
+
+    @Test
+    void winLossIsNotDecidedUntilEveryBowlerFinishesAllTenFrames() throws Exception {
+        String adminToken = loginAsAdmin();
+        long aliceId = createBowler(adminToken, "Ivy");
+        long bobId = createBowler(adminToken, "Jack");
+
+        MvcResult sessionResult = mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-06-27\", \"timeSlot\": \"MORNING\" }"))
+                .andExpect(status().isOk())
+                .andReturn();
+        long sessionId = readField(sessionResult, "id");
+
+        MvcResult gameResult = mockMvc.perform(post("/api/sessions/" + sessionId + "/games")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        long gameId = readField(gameResult, "id");
+
+        // Both bowlers tied on frame 1 (a strike each) — only one frame of ten entered so far.
+        submitFrames(adminToken, aliceId, gameId, "[[10]]");
+        submitFrames(adminToken, bobId, gameId, "[[10]]");
+
+        // Mid-game: no result yet, gamePoints is just the frame points earned so far (not a
+        // tied-for-the-lead win-bonus share like 3.5 — the game isn't finished).
+        mockMvc.perform(get("/api/scores/games/" + gameId + "/participants")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.bowlerId == " + aliceId + ")].gamePoints").value(2.0))
+                .andExpect(jsonPath("$[?(@.bowlerId == " + aliceId + ")].result").value(org.hamcrest.Matchers.contains(org.hamcrest.Matchers.nullValue())))
+                .andExpect(jsonPath("$[?(@.bowlerId == " + bobId + ")].gamePoints").value(2.0))
+                .andExpect(jsonPath("$[?(@.bowlerId == " + bobId + ")].result").value(org.hamcrest.Matchers.contains(org.hamcrest.Matchers.nullValue())));
+
+        // Alice finishes with a perfect game; Bob still hasn't finished.
+        submitFrames(adminToken, aliceId, gameId, """
+            [[10],[10],[10],[10],[10],[10],[10],[10],[10],[10,10,10]]
+        """);
+
+        mockMvc.perform(get("/api/scores/games/" + gameId + "/participants")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.bowlerId == " + aliceId + ")].result").value(org.hamcrest.Matchers.contains(org.hamcrest.Matchers.nullValue())));
+
+        // Now Bob finishes too, all open frames -> both games complete -> result is finally decided.
+        submitFrames(adminToken, bobId, gameId, """
+            [[3,4],[3,4],[3,4],[3,4],[3,4],[3,4],[3,4],[3,4],[3,4],[3,4]]
+        """);
+
+        mockMvc.perform(get("/api/scores/games/" + gameId + "/participants")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.bowlerId == " + aliceId + ")].result").value("WIN"))
+                .andExpect(jsonPath("$[?(@.bowlerId == " + aliceId + ")].gamePoints").value(23.0))
+                .andExpect(jsonPath("$[?(@.bowlerId == " + bobId + ")].result").value("LOSS"))
+                .andExpect(jsonPath("$[?(@.bowlerId == " + bobId + ")].gamePoints").value(0.0));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────

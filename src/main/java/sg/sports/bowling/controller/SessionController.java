@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import sg.sports.bowling.entity.BowlingSession;
+import sg.sports.bowling.entity.BowlingSession.TimeSlot;
 import sg.sports.bowling.entity.Game;
 import sg.sports.bowling.service.SessionService;
 
@@ -40,7 +41,17 @@ public class SessionController {
         LocalDate date = LocalDate.parse(body.get("sessionDate"));
         String location = body.get("location");
         String notes = body.get("notes");
-        return ResponseEntity.ok(sessionService.createSession(date, location, notes));
+        String timeSlotRaw = body.get("timeSlot");
+        if (timeSlotRaw == null || timeSlotRaw.isBlank()) {
+            throw new IllegalArgumentException("timeSlot is required");
+        }
+        TimeSlot timeSlot;
+        try {
+            timeSlot = TimeSlot.valueOf(timeSlotRaw);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid timeSlot: " + timeSlotRaw);
+        }
+        return ResponseEntity.ok(sessionService.createSession(date, location, notes, timeSlot));
     }
 
     @PostMapping("/{id}/close")

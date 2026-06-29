@@ -27,6 +27,7 @@ img{max-width:100%}
 <tr><td><code>location</code></td><td>STRING</td><td>Optional venue.</td></tr>
 <tr><td><code>notes</code></td><td>STRING</td><td>Optional free text.</td></tr>
 <tr><td><code>status</code></td><td>STRING enum, not null</td><td><code>OPEN</code> (default) or <code>CLOSED</code>.</td></tr>
+<tr><td><code>time_slot</code></td><td>STRING enum, nullable</td><td><code>MORNING</code> (8am-12pm), <code>AFTERNOON</code> (1pm-6pm), or <code>EVENING</code> (8pm-12am). Required on create (enforced in the controller, not a DB constraint) — nullable only so sessions created before this field existed don&#39;t break.</td></tr>
 </table>
 <h1>Relationships</h1>
 <ul>
