@@ -149,6 +149,38 @@ class BowlingApiIntegrationTest {
     }
 
     @Test
+    void deletingABowlerWithExistingGameHistoryIsRejected() throws Exception {
+        String adminToken = loginAsAdmin();
+        long bowlerId = createBowler(adminToken, "Deletable Dan");
+
+        MvcResult sessionResult = mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-06-27\", \"timeSlot\": \"MORNING\" }"))
+                .andExpect(status().isOk())
+                .andReturn();
+        long sessionId = readField(sessionResult, "id");
+
+        MvcResult gameResult = mockMvc.perform(post("/api/sessions/" + sessionId + "/games")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        long gameId = readField(gameResult, "id");
+
+        submitFrames(adminToken, bowlerId, gameId, "[[10]]");
+
+        mockMvc.perform(delete("/api/bowlers/" + bowlerId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Cannot delete Deletable Dan: they have existing game history"));
+
+        // Bowler must still exist — the delete should have been rejected, not partially applied.
+        mockMvc.perform(get("/api/bowlers/" + bowlerId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void creatingADuplicateBowlerReturnsBadRequestNotUnauthorized() throws Exception {
         String adminToken = loginAsAdmin();
         createBowler(adminToken, "Gina");
@@ -174,6 +206,56 @@ class BowlingApiIntegrationTest {
     }
 
     // ── Sessions, games, scores, leaderboard (full flow) ────────────────
+
+    @Test
+    void adminCanDeleteSessionWithAllAssociatedData() throws Exception {
+        String adminToken = loginAsAdmin();
+        long bowlerId = createBowler(adminToken, "Henry");
+
+        MvcResult sessionResult = mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-06-28\", \"timeSlot\": \"EVENING\" }"))
+                .andExpect(status().isOk())
+                .andReturn();
+        long sessionId = readField(sessionResult, "id");
+
+        MvcResult gameResult = mockMvc.perform(post("/api/sessions/" + sessionId + "/games")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        long gameId = readField(gameResult, "id");
+
+        submitFrames(adminToken, bowlerId, gameId, "[[10]]");
+
+        mockMvc.perform(delete("/api/sessions/" + sessionId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/sessions/" + sessionId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void nonAdminCannotDeleteSession() throws Exception {
+        String adminToken = loginAsAdmin();
+        MvcResult sessionResult = mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-06-29\", \"timeSlot\": \"MORNING\" }"))
+                .andExpect(status().isOk())
+                .andReturn();
+        long sessionId = readField(sessionResult, "id");
+
+        registerUser("ivan", "ivan@example.com", "password123");
+        String userToken = loginAndGetToken("ivan", "password123");
+
+        mockMvc.perform(delete("/api/sessions/" + sessionId)
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden());
+    }
 
     @Test
     void fullSessionScoringFlowProducesExpectedLeaderboard() throws Exception {
@@ -247,6 +329,24 @@ class BowlingApiIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CLOSED"));
+    }
+
+    @Test
+    void creatingDuplicateSessionIsRejected() throws Exception {
+        String adminToken = loginAsAdmin();
+
+        mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-07-01\", \"timeSlot\": \"AFTERNOON\" }"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/sessions")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"sessionDate\": \"2026-07-01\", \"timeSlot\": \"AFTERNOON\" }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("A session already exists for 2026-07-01 (afternoon)"));
     }
 
     @Test

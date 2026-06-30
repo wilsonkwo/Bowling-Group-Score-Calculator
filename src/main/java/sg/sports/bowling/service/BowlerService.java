@@ -3,6 +3,7 @@ package sg.sports.bowling.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import sg.sports.bowling.entity.Bowler;
+import sg.sports.bowling.repository.BowlerGameRepository;
 import sg.sports.bowling.repository.BowlerRepository;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
 public class BowlerService {
 
     private final BowlerRepository bowlerRepository;
+    private final BowlerGameRepository bowlerGameRepository;
 
     public List<Bowler> getAllBowlers() {
         return bowlerRepository.findAllByOrderByNameAsc();
@@ -36,6 +38,10 @@ public class BowlerService {
     }
 
     public void deleteBowler(Long id) {
+        Bowler bowler = getBowler(id);
+        if (bowlerGameRepository.existsByBowler(bowler)) {
+            throw new IllegalArgumentException("Cannot delete " + bowler.getName() + ": they have existing game history");
+        }
         bowlerRepository.deleteById(id);
     }
 }

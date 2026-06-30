@@ -28,5 +28,6 @@ img{max-width:100%}
 <tr><td>PUT</td><td><code>/{id}</code></td><td>ROLE_ADMIN</td><td><code>{ name }</code></td><td>updated Bowler</td></tr>
 <tr><td>DELETE</td><td><code>/{id}</code></td><td>ROLE_ADMIN</td><td>—</td><td>204 No Content</td></tr>
 </table>
+<p>A bowler with any existing <a href="../entities/bowler_game.html">BowlerGame</a> record cannot be deleted — <code>BowlerService.deleteBowler</code> checks for this explicitly and returns <code>400</code> (<code>"Cannot delete {name}: they have existing game history"</code>) rather than relying on the DB&#39;s foreign key constraint, which doesn&#39;t reliably fail the same way across H2 (tests) and MariaDB (prod).</p>
 </body>
 </html>

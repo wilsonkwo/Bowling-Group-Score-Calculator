@@ -12,16 +12,21 @@ import {
   Loader,
   Alert,
   Chip,
+  Modal,
+  Text,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useAuth } from '../auth/AuthContext'
-import { closeSession, createSession, getSessions, type BowlingSession, type TimeSlot } from '../api/sessions'
+import {
+  closeSession,
+  createSession,
+  deleteSession,
+  getSessions,
+  TIME_SLOT_LABELS,
+  type BowlingSession,
+  type TimeSlot,
+} from '../api/sessions'
 
-const TIME_SLOT_LABELS: Record<TimeSlot, string> = {
-  MORNING: 'Morning (8am-12pm)',
-  AFTERNOON: 'Afternoon (1pm-6pm)',
-  EVENING: 'Evening (8pm-12am)',
-}
 const TIME_SLOT_OPTIONS = (Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((value) => ({
   value,
   label: TIME_SLOT_LABELS[value],
@@ -38,6 +43,9 @@ export function SessionsPage() {
   const [location, setLocation] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const [deleteTarget, setDeleteTarget] = useState<BowlingSession | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('ALL')
   const filteredSessions = sessions.filter((s) => statusFilter === 'ALL' || s.status === statusFilter)
@@ -81,11 +89,46 @@ export function SessionsPage() {
     }
   }
 
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await deleteSession(deleteTarget.id)
+      setDeleteTarget(null)
+      loadSessions()
+    } catch {
+      notifications.show({ color: 'red', title: 'Error', message: 'Failed to delete session' })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (loading) return <Loader mt="xl" />
   if (error) return <Alert color="red">{error}</Alert>
 
   return (
     <Stack maw={700}>
+      <Modal
+        opened={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete session"
+        centered
+      >
+        <Text mb="md">
+          Delete session on <strong>{deleteTarget?.sessionDate}</strong>
+          {deleteTarget?.timeSlot ? ` (${TIME_SLOT_LABELS[deleteTarget.timeSlot]})` : ''}? This will
+          permanently remove all associated games and scores.
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button color="red" loading={deleting} onClick={handleDeleteConfirm}>
+            Delete
+          </Button>
+        </Group>
+      </Modal>
+
       <Title order={2}>Sessions</Title>
 
       <Chip.Group value={statusFilter} onChange={(v) => setStatusFilter(v as 'ALL' | 'OPEN' | 'CLOSED')}>
@@ -104,7 +147,7 @@ export function SessionsPage() {
               <Table.Th>Time Slot</Table.Th>
               <Table.Th>Location</Table.Th>
               <Table.Th>Status</Table.Th>
-              {isAdmin && <Table.Th w={100}>Actions</Table.Th>}
+              {isAdmin && <Table.Th w={140}>Actions</Table.Th>}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -118,11 +161,16 @@ export function SessionsPage() {
                 </Table.Td>
                 {isAdmin && (
                   <Table.Td>
-                    {s.status === 'OPEN' && (
-                      <Button size="xs" variant="light" onClick={() => handleClose(s.id)}>
-                        Close
+                    <Group gap="xs">
+                      {s.status === 'OPEN' && (
+                        <Button size="xs" variant="light" onClick={() => handleClose(s.id)}>
+                          Close
+                        </Button>
+                      )}
+                      <Button size="xs" color="red" variant="light" onClick={() => setDeleteTarget(s)}>
+                        Delete
                       </Button>
-                    )}
+                    </Group>
                   </Table.Td>
                 )}
               </Table.Tr>

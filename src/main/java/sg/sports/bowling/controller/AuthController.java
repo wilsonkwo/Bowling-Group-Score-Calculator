@@ -1,5 +1,9 @@
 package sg.sports.bowling.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +27,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Register, login, refresh token, and change password")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -30,12 +35,13 @@ public class AuthController {
     private final UserService userService;
     private final UserDetailsService userDetailsService;
 
-    /**
-     * POST /api/auth/login
-     * Body: { "username": "...", "password": "..." }
-     * Returns: { "token": "<jwt>" }
-     */
     @PostMapping("/login")
+    @SecurityRequirements
+    @Operation(summary = "Obtain a JWT token", description = "No prior authentication required.", responses = {
+            @ApiResponse(responseCode = "200", description = "Returns token, type, username, and roles"),
+            @ApiResponse(responseCode = "400", description = "Validation error (blank username/password)"),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    })
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
@@ -45,33 +51,32 @@ public class AuthController {
         return ResponseEntity.ok(buildTokenResponse(token, userDetails));
     }
 
-    /**
-     * POST /api/auth/register
-     * Body: { "username": "...", "email": "...", "password": "..." }
-     */
     @PostMapping("/register")
+    @SecurityRequirements
+    @Operation(summary = "Register a new user account", description = "No prior authentication required. New users receive ROLE_USER.", responses = {
+            @ApiResponse(responseCode = "200", description = "User registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Validation error or username/email already taken")
+    })
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         userService.registerUser(request.getUsername(), request.getEmail(), request.getPassword());
         return ResponseEntity.ok(Map.of("message", "User registered successfully"));
     }
 
-    /**
-     * POST /api/auth/refresh
-     * Header: Authorization: Bearer <current-valid-token>
-     * Returns a fresh token with a reset expiry — no need to re-enter credentials.
-     */
     @PostMapping("/refresh")
+    @Operation(summary = "Refresh the JWT token", description = "Supply the current (still-valid) token; receive a new one with reset expiry.", responses = {
+            @ApiResponse(responseCode = "200", description = "New token issued"),
+            @ApiResponse(responseCode = "401", description = "Missing or expired token")
+    })
     public ResponseEntity<?> refresh(@AuthenticationPrincipal UserDetails userDetails) {
         String newToken = jwtUtil.generateToken(userDetails);
         return ResponseEntity.ok(buildTokenResponse(newToken, userDetails));
     }
 
-    /**
-     * GET /api/auth/me
-     * Header: Authorization: Bearer <token>
-     * Returns the current user's username and roles.
-     */
     @GetMapping("/me")
+    @Operation(summary = "Get the authenticated user's profile", responses = {
+            @ApiResponse(responseCode = "200", description = "Returns username and roles"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+    })
     public ResponseEntity<?> me(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(Map.of(
                 "username", userDetails.getUsername(),
@@ -81,12 +86,12 @@ public class AuthController {
         ));
     }
 
-    /**
-     * POST /api/auth/change-password
-     * Header: Authorization: Bearer <token>
-     * Body: { "currentPassword": "...", "newPassword": "..." }
-     */
     @PostMapping("/change-password")
+    @Operation(summary = "Change the authenticated user's password", responses = {
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "400", description = "Validation error or wrong current password"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+    })
     public ResponseEntity<?> changePassword(@AuthenticationPrincipal UserDetails userDetails,
                                              @Valid @RequestBody ChangePasswordRequest request) {
         try {

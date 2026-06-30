@@ -4,7 +4,7 @@ import { useDisclosure } from '@mantine/hooks'
 import { useAuth } from '../auth/AuthContext'
 
 export function Layout() {
-  const { username, logout } = useAuth()
+  const { username, isAdmin, logout } = useAuth()
   const navigate = useNavigate()
   const [navOpened, { toggle: toggleNav }] = useDisclosure()
 
@@ -42,24 +42,36 @@ export function Layout() {
       </AppShell.Header>
 
       <AppShell.Navbar p="md">
-        <NavLink
-          component={RouterNavLink}
-          to="/bowlers"
-          label="Bowlers List"
-          onClick={toggleNav}
-        />
-        <NavLink
-          component={RouterNavLink}
-          to="/sessions"
-          label="Session List"
-          onClick={toggleNav}
-        />
-        <NavLink
-          component={RouterNavLink}
-          to="/game-score"
-          label="Add Game Score"
-          onClick={toggleNav}
-        />
+        <Text size="xs" fw={700} c="dimmed" mb={4}>
+          GENERAL
+        </Text>
+        <NavLink component={RouterNavLink} to="/" end label="Sessions" onClick={toggleNav} />
+
+        {isAdmin && (
+          <>
+            <Text size="xs" fw={700} c="dimmed" mt="md" mb={4}>
+              DATA MANAGEMENT
+            </Text>
+            <NavLink
+              component={RouterNavLink}
+              to="/manage/bowlers"
+              label="Add / Modify Bowler Details"
+              onClick={toggleNav}
+            />
+            <NavLink
+              component={RouterNavLink}
+              to="/manage/sessions"
+              label="Add / Modify Session Details"
+              onClick={toggleNav}
+            />
+            <NavLink
+              component={RouterNavLink}
+              to="/manage/games"
+              label="Add / Modify Game Details"
+              onClick={toggleNav}
+            />
+          </>
+        )}
       </AppShell.Navbar>
 
       <AppShell.Main>

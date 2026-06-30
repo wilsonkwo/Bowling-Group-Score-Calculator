@@ -14,7 +14,8 @@ timestamp: 2026-06-27T00:00:00Z
 | Spring Web (`spring-boot-starter-web`) | 3.3.5 | REST controllers |
 | Spring Data JPA (`spring-boot-starter-data-jpa`) | 3.3.5 | repositories/entities, Hibernate ORM 6.5.3 |
 | Spring Security (`spring-boot-starter-security`) | 3.3.5 | auth, method security; Spring Security 6.3.4 |
-| Spring Boot Validation (`spring-boot-starter-validation`) | 3.3.5 | `@Valid` request DTOs |
+| Spring Boot Validation (`spring-boot-starter-validation`) | 3.3.5 | `@Valid` request DTOs; field errors returned as `{ "message": "Validation failed", "errors": { "<field>": "<message>" } }` |
+| SpringDoc OpenAPI (`springdoc-openapi-starter-webmvc-ui`) | 2.6.0 | Auto-generates OpenAPI 3 spec from annotations; Swagger UI at `/swagger-ui.html`, raw YAML/JSON at `/v3/api-docs.yaml` and `/v3/api-docs` |
 | Spring Boot DevTools | 3.3.5 | local dev auto-restart (runtime only) |
 | JJWT (`jjwt-api`/`jjwt-impl`/`jjwt-jackson`) | 0.12.6 | JWT issuing/verification, see [JwtUtil](../src/main/java/sg/sports/bowling/security/JwtUtil.java) |
 | Lombok | 1.18.34 | `@Data`/`@Builder` boilerplate on entities/DTOs |

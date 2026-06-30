@@ -1,0 +1,935 @@
+openapi: "3.0.3"
+
+info:
+  title: Bowling Group Score Calculator API
+  version: "1.0.0"
+  description: >
+    REST API for tracking bowling sessions, frame-by-frame scoring, and group leaderboards.
+    All endpoints except /api/auth/login and /api/auth/register require a Bearer JWT token
+    obtained from POST /api/auth/login.
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+security:
+  - bearerAuth: []
+
+# ── Reusable components ───────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    # ── Request bodies ────────────────────────────────────────────────────────
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          example: admin
+          description: Registered username. Must not be blank.
+        password:
+          type: string
+          minLength: 1
+          example: changeme
+          description: Account password. Must not be blank.
+
+    RegisterRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: alice
+          description: Unique login name (3–50 characters).
+        email:
+          type: string
+          format: email
+          example: alice@example.com
+          description: Valid email address. Must not be blank.
+        password:
+          type: string
+          minLength: 6
+          example: secret123
+          description: Account password. Minimum 6 characters.
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+          description: The user's current password. Used to verify identity before the change.
+        newPassword:
+          type: string
+          minLength: 8
+          description: Replacement password. Minimum 8 characters.
+
+    CreateBowlerRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Alice
+          description: Bowler's display name (1–100 characters). Must not be blank.
+
+    UpdateBowlerRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Alice B.
+          description: Bowler's new display name (1–100 characters). Must not be blank.
+
+    CreateSessionRequest:
+      type: object
+      required: [sessionDate, timeSlot]
+      properties:
+        sessionDate:
+          type: string
+          format: date
+          example: "2026-07-04"
+          description: Date of the bowling session in YYYY-MM-DD format. Required.
+        timeSlot:
+          type: string
+          enum: [MORNING, AFTERNOON, EVENING]
+          example: AFTERNOON
+          description: >
+            Time slot for the session. Required.
+            MORNING = 8am–12pm, AFTERNOON = 1pm–6pm, EVENING = 8pm–12am.
+            The combination of sessionDate + timeSlot must be unique.
+        location:
+          type: string
+          maxLength: 200
+          example: Downtown Lanes
+          description: Optional venue name. Maximum 200 characters.
+        notes:
+          type: string
+          maxLength: 1000
+          description: Optional free-text notes. Maximum 1000 characters.
+
+    FrameSubmitRequest:
+      type: object
+      required: [bowlerId, gameId, frames]
+      properties:
+        bowlerId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+          description: ID of the bowler. Must be a positive integer.
+        gameId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 5
+          description: ID of the game. Must be a positive integer.
+        frames:
+          type: array
+          minItems: 1
+          maxItems: 10
+          example: [[10],[7,3],[9,0],[10],[0,8],[8,2],[0,6],[10],[10],[10,8,1]]
+          description: >
+            List of frames (1–10). Each frame is a list of ball scores.
+            Frames 1–9: 1 ball (strike) or 2 balls.
+            Frame 10: 2 balls (open/spare) or 3 balls (spare/strike bonus).
+            Re-submitting replaces all previously saved frames for this bowler/game pair.
+          items:
+            type: array
+            minItems: 1
+            maxItems: 3
+            description: "Ball scores for one frame. Each ball: 0-10."
+            items:
+              type: integer
+              minimum: 0
+              maximum: 10
+
+    # ── Response bodies ───────────────────────────────────────────────────────
+
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: 'JWT access token. Include in subsequent requests as ''Authorization: Bearer <token>''.'
+        type:
+          type: string
+          example: Bearer
+        username:
+          type: string
+          example: alice
+        roles:
+          type: array
+          items:
+            type: string
+          example: [ROLE_USER]
+
+    Bowler:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Alice
+
+    BowlingSession:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 3
+        sessionDate:
+          type: string
+          format: date
+          example: "2026-07-04"
+        location:
+          type: string
+          nullable: true
+          example: Downtown Lanes
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
+          example: OPEN
+        timeSlot:
+          type: string
+          enum: [MORNING, AFTERNOON, EVENING]
+          nullable: true
+          example: AFTERNOON
+
+    Game:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 7
+        session:
+          $ref: '#/components/schemas/BowlingSession'
+        gameNumber:
+          type: integer
+          example: 1
+          description: 1-based index within the session.
+
+    FrameResponse:
+      type: object
+      properties:
+        frameNumber:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 1
+        ball1:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
+          example: 10
+        ball2:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
+        ball3:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 10
+          description: Only present for the 10th frame when a bonus ball was earned.
+        frameScore:
+          type: integer
+          nullable: true
+          example: 20
+          description: Score contribution of this frame including strike/spare bonuses.
+        cumulativeScore:
+          type: integer
+          nullable: true
+          example: 20
+          description: Running total after this frame.
+        framePoints:
+          type: number
+          format: double
+          example: 2.0
+          description: Group-scoring points earned for this frame (strike/spare bonuses).
+        strike:
+          type: boolean
+          example: true
+        spare:
+          type: boolean
+          example: false
+
+    ParticipantResponse:
+      type: object
+      properties:
+        bowlerId:
+          type: integer
+          format: int64
+          example: 1
+        bowlerName:
+          type: string
+          example: Alice
+        totalScore:
+          type: integer
+          nullable: true
+          example: 189
+          description: Sum of all frame scores. Null if scoring is incomplete.
+        gamePoints:
+          type: number
+          format: double
+          example: 2.0
+          description: Points earned in this game from win/loss/draw calculation.
+        result:
+          type: string
+          enum: [WIN, LOSS, DRAW]
+          nullable: true
+          example: WIN
+          description: Outcome once all bowlers' frames are submitted. Null while in progress.
+        frames:
+          type: array
+          items:
+            $ref: '#/components/schemas/FrameResponse'
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        bowlerId:
+          type: integer
+          format: int64
+          example: 1
+        bowlerName:
+          type: string
+          example: Alice
+        totalPoints:
+          type: number
+          format: double
+          example: 6.0
+          description: Sum of game points across all games in the session.
+
+    # ── Error responses ───────────────────────────────────────────────────────
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Session not found: 42"
+
+    ValidationErrorResponse:
+      type: object
+      description: Returned when @Valid constraints are violated. Lists every failing field.
+      properties:
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            name: "Name must not be blank"
+            sessionDate: "Session date is required"
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Obtain a JWT token
+      description: No prior authentication required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        "200":
+          description: JWT issued successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        "400":
+          description: Blank username or password (field validation failure).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        "401":
+          description: Credentials do not match any account.
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user account
+      description: No prior authentication required. New accounts receive ROLE_USER.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        "200":
+          description: Account created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User registered successfully
+        "400":
+          description: Validation error, or username/email already in use.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Issue a new JWT with reset expiry
+      description: >
+        Supply the current (still-valid) Bearer token. Returns a fresh token without
+        requiring the user to re-enter their credentials.
+      responses:
+        "200":
+          description: New token issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        "401":
+          description: Missing or expired token.
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the authenticated user's profile
+      responses:
+        "200":
+          description: Username and granted roles.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                    example: alice
+                  roles:
+                    type: array
+                    items:
+                      type: string
+                    example: [ROLE_USER]
+        "401":
+          description: Missing or invalid JWT.
+
+  /api/auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change the authenticated user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        "200":
+          description: Password updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password changed successfully
+        "400":
+          description: Validation failure or incorrect current password.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+
+  # ── Bowlers ───────────────────────────────────────────────────────────────
+
+  /api/bowlers:
+    get:
+      tags: [Bowlers]
+      summary: List all bowlers
+      responses:
+        "200":
+          description: Full list of bowlers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bowler'
+        "401":
+          description: Missing or invalid JWT.
+
+    post:
+      tags: [Bowlers]
+      summary: Create a bowler
+      description: Requires ROLE_ADMIN. Name must be unique.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBowlerRequest'
+      responses:
+        "200":
+          description: Bowler created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bowler'
+        "400":
+          description: Validation failure or duplicate name.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Requires ROLE_ADMIN.
+
+  /api/bowlers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Bowler ID.
+
+    get:
+      tags: [Bowlers]
+      summary: Get a bowler by ID
+      responses:
+        "200":
+          description: Bowler found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bowler'
+        "400":
+          description: Bowler not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+
+    put:
+      tags: [Bowlers]
+      summary: Update a bowler's name
+      description: Requires ROLE_ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBowlerRequest'
+      responses:
+        "200":
+          description: Bowler updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bowler'
+        "400":
+          description: Validation failure or bowler not found.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Requires ROLE_ADMIN.
+
+    delete:
+      tags: [Bowlers]
+      summary: Delete a bowler
+      description: >
+        Requires ROLE_ADMIN. Rejected with 400 if the bowler has any existing game
+        history — delete the session(s) first or transfer data before removing the bowler.
+      responses:
+        "204":
+          description: Bowler deleted.
+        "400":
+          description: Bowler not found, or bowler has existing game history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Requires ROLE_ADMIN.
+
+  # ── Sessions ──────────────────────────────────────────────────────────────
+
+  /api/sessions:
+    get:
+      tags: [Sessions]
+      summary: List all sessions (newest first)
+      responses:
+        "200":
+          description: All sessions ordered by date descending.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BowlingSession'
+        "401":
+          description: Missing or invalid JWT.
+
+    post:
+      tags: [Sessions]
+      summary: Create a session
+      description: >
+        Requires ROLE_ADMIN. The combination of sessionDate + timeSlot must be unique;
+        attempting to create a duplicate returns 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        "200":
+          description: Session created with status OPEN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BowlingSession'
+        "400":
+          description: Validation failure or duplicate date/slot combination.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Requires ROLE_ADMIN.
+
+  /api/sessions/open:
+    get:
+      tags: [Sessions]
+      summary: List open sessions (newest first)
+      responses:
+        "200":
+          description: Sessions with status OPEN ordered by date descending.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BowlingSession'
+        "401":
+          description: Missing or invalid JWT.
+
+  /api/sessions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Session ID.
+
+    get:
+      tags: [Sessions]
+      summary: Get a session by ID
+      responses:
+        "200":
+          description: Session found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BowlingSession'
+        "400":
+          description: Session not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+
+    delete:
+      tags: [Sessions]
+      summary: Delete a session and all its data
+      description: >
+        Requires ROLE_ADMIN. Cascades: permanently removes all games, bowler_game
+        records, and frames belonging to this session.
+      responses:
+        "204":
+          description: Session and all related data deleted.
+        "400":
+          description: Session not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Requires ROLE_ADMIN.
+
+  /api/sessions/{id}/close:
+    post:
+      tags: [Sessions]
+      summary: Close a session
+      description: Requires ROLE_ADMIN. Sets status to CLOSED.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Session ID.
+      responses:
+        "200":
+          description: Session status set to CLOSED.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BowlingSession'
+        "400":
+          description: Session not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Requires ROLE_ADMIN.
+
+  /api/sessions/{id}/games:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Session ID.
+
+    get:
+      tags: [Sessions]
+      summary: List games in a session
+      responses:
+        "200":
+          description: Games ordered by game number ascending.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Game'
+        "400":
+          description: Session not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+
+    post:
+      tags: [Sessions]
+      summary: Add a game to a session
+      description: Requires ROLE_ADMIN. Game number is auto-incremented within the session.
+      responses:
+        "200":
+          description: Game created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        "400":
+          description: Session not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+        "403":
+          description: Requires ROLE_ADMIN.
+
+  # ── Scores ────────────────────────────────────────────────────────────────
+
+  /api/scores/frames:
+    post:
+      tags: [Scores]
+      summary: Submit frames for a bowler in a game
+      description: >
+        Re-submitting replaces all previously saved frames for that bowler/game pair
+        and triggers score and win/loss recalculation for all participants in the game.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrameSubmitRequest'
+      responses:
+        "200":
+          description: Frames saved. Returns the updated frame list with computed scores.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FrameResponse'
+        "400":
+          description: Validation failure, invalid bowler/game ID, or illegal frame data.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidationErrorResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid JWT.
+
+    get:
+      tags: [Scores]
+      summary: Get a bowler's frames for a game
+      parameters:
+        - name: bowlerId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Bowler ID.
+        - name: gameId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Game ID.
+      responses:
+        "200":
+          description: Frames ordered by frame number ascending.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FrameResponse'
+        "401":
+          description: Missing or invalid JWT.
+
+  /api/scores/games/{gameId}/participants:
+    get:
+      tags: [Scores]
+      summary: List participants in a game with their scores and frames
+      description: >
+        Returns every bowler entered in the game so far, with their total score, game
+        points, result, and full frame breakdown. Used to resume frame entry mid-game.
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Game ID.
+      responses:
+        "200":
+          description: List of participants.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParticipantResponse'
+        "401":
+          description: Missing or invalid JWT.
+
+  /api/scores/leaderboard:
+    get:
+      tags: [Scores]
+      summary: Get the leaderboard for a session
+      description: >
+        Returns all bowlers who participated in at least one game in the session,
+        ranked by total game points accumulated across all games.
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Session ID.
+      responses:
+        "200":
+          description: Bowlers ranked by total points (highest first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardEntry'
+        "401":
+          description: Missing or invalid JWT.

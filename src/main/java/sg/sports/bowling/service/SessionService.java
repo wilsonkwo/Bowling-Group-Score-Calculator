@@ -7,7 +7,9 @@ import sg.sports.bowling.entity.BowlingSession;
 import sg.sports.bowling.entity.BowlingSession.SessionStatus;
 import sg.sports.bowling.entity.BowlingSession.TimeSlot;
 import sg.sports.bowling.entity.Game;
+import sg.sports.bowling.repository.BowlerGameRepository;
 import sg.sports.bowling.repository.BowlingSessionRepository;
+import sg.sports.bowling.repository.FrameRepository;
 import sg.sports.bowling.repository.GameRepository;
 
 import java.time.LocalDate;
@@ -19,6 +21,8 @@ public class SessionService {
 
     private final BowlingSessionRepository sessionRepository;
     private final GameRepository gameRepository;
+    private final BowlerGameRepository bowlerGameRepository;
+    private final FrameRepository frameRepository;
 
     public List<BowlingSession> getAllSessions() {
         return sessionRepository.findAllByOrderBySessionDateDesc();
@@ -37,6 +41,10 @@ public class SessionService {
     public BowlingSession createSession(LocalDate date, String location, String notes, TimeSlot timeSlot) {
         if (timeSlot == null) {
             throw new IllegalArgumentException("timeSlot is required");
+        }
+        if (sessionRepository.existsBySessionDateAndTimeSlot(date, timeSlot)) {
+            throw new IllegalArgumentException(
+                "A session already exists for " + date + " (" + timeSlot.name().toLowerCase() + ")");
         }
         BowlingSession session = BowlingSession.builder()
                 .sessionDate(date)
@@ -68,5 +76,14 @@ public class SessionService {
     public List<Game> getGamesForSession(Long sessionId) {
         BowlingSession session = getSession(sessionId);
         return gameRepository.findBySessionOrderByGameNumberAsc(session);
+    }
+
+    @Transactional
+    public void deleteSession(Long sessionId) {
+        BowlingSession session = getSession(sessionId);
+        frameRepository.deleteAllBySession(session);
+        bowlerGameRepository.deleteAllBySession(session);
+        gameRepository.deleteAllBySession(session);
+        sessionRepository.delete(session);
     }
 }

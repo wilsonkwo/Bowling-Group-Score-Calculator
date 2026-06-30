@@ -1,3 +1,10 @@
 body {
   margin: 0;
 }
+
+/* Dock the toast container just below the header, above the data grid — only the
+   active top-right container, not the other 5 position variants Mantine always renders. */
+.mantine-Notifications-root[data-position='top-right'] {
+  top: 76px;
+  right: max(16px, calc(100vw - 1060px));
+}

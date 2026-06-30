@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Table, Title, TextInput, Button, Group, ActionIcon, Alert, Loader, Paper, Stack } from '@mantine/core'
 import { IconPencil, IconTrash, IconCheck, IconX } from '@tabler/icons-react'
+import { notifications } from '@mantine/notifications'
 import { useAuth } from '../auth/AuthContext'
 import { createBowler, deleteBowler, getBowlers, updateBowler, type Bowler } from '../api/bowlers'
 
@@ -41,8 +42,15 @@ export function BowlersPage() {
   }
 
   async function handleDelete(id: number) {
-    await deleteBowler(id)
-    loadBowlers()
+    try {
+      await deleteBowler(id)
+      loadBowlers()
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Failed to delete bowler'
+      notifications.show({ color: 'red', title: 'Error', message })
+    }
   }
 
   if (loading) return <Loader mt="xl" />

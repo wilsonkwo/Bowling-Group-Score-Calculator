@@ -17,6 +17,16 @@ This project documents its domain model, API, and scoring rules in `okf/` using 
 
 **Read `okf/index.md` (and the relevant linked pages) before making changes to entities, endpoints, or scoring logic.** Whenever a change touches something documented there, update the matching `okf/*.md` file in the same change — do not leave the docs stale.
 
+## API contract files — mandatory sync
+
+Any change that adds, removes, or modifies an API endpoint, request field, response field, validation rule, or HTTP status code **must** update all three of these files in the same change:
+
+1. `openapi.yaml` — OpenAPI 3.0 spec at the project root (paths, schemas, constraints, responses)
+2. `bowling-api.postman_collection.json` — Postman collection at the project root (request body, URL, params, test scripts)
+3. The matching `okf/api/*.md` — OKF API doc for the affected controller
+
+Do not consider an API change complete until all three are updated.
+
 The `.md` files are the source of truth; `okf/architecture.svg` is the canonical architecture diagram (also embedded in `okf/index.md`). Run `okf\generate_docs.bat` (or `okf/generate_docs.ps1`) to regenerate a browsable HTML copy of every `okf/*.md` file as a sibling `.html` (e.g. `okf/index.html`, `okf/entities/bowler.html`) — these `.html` files are generated output, not source; re-run the script after editing any `.md` file rather than hand-editing the HTML.
 
 ## Development process: TDD

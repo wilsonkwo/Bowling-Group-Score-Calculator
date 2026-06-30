@@ -1,10 +1,12 @@
 package sg.sports.bowling.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import sg.sports.bowling.entity.Bowler;
 import sg.sports.bowling.entity.BowlerGame;
+import sg.sports.bowling.entity.BowlingSession;
 import sg.sports.bowling.entity.Game;
 
 import java.util.List;
@@ -14,6 +16,7 @@ public interface BowlerGameRepository extends JpaRepository<BowlerGame, Long> {
     Optional<BowlerGame> findByBowlerAndGame(Bowler bowler, Game game);
     List<BowlerGame> findByGame(Game game);
     List<BowlerGame> findByBowler(Bowler bowler);
+    boolean existsByBowler(Bowler bowler);
 
     @Query("""
         SELECT bg FROM BowlerGame bg
@@ -32,4 +35,8 @@ public interface BowlerGameRepository extends JpaRepository<BowlerGame, Long> {
         ORDER BY totalPoints DESC
     """)
     List<Object[]> findSessionLeaderboard(@Param("sessionId") Long sessionId);
+
+    @Modifying
+    @Query("DELETE FROM BowlerGame bg WHERE bg.game.session = :session")
+    void deleteAllBySession(@Param("session") BowlingSession session);
 }

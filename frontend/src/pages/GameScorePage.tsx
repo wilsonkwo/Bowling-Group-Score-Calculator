@@ -17,7 +17,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { useAuth } from '../auth/AuthContext'
 import { getBowlers, type Bowler } from '../api/bowlers'
-import { addGame, getGames, getOpenSessions, type BowlingSession, type Game } from '../api/sessions'
+import { addGame, getGames, getOpenSessions, TIME_SLOT_LABELS, type BowlingSession, type Game } from '../api/sessions'
 import { getParticipants, submitFrames, type ParticipantResponse } from '../api/scores'
 import { BallCell } from '../components/BallCell'
 import {
@@ -190,7 +190,7 @@ export function GameScorePage() {
           placeholder="Select an open session"
           data={sessions.map((s) => ({
             value: String(s.id),
-            label: `${s.sessionDate}${s.location ? ' — ' + s.location : ''}`,
+            label: `${s.sessionDate} ${s.timeSlot ? TIME_SLOT_LABELS[s.timeSlot].split(' ')[0] : ''}`.trim(),
           }))}
           value={sessionId}
           onChange={setSessionId}

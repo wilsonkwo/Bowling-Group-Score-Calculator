@@ -12,7 +12,7 @@ import { AuthProvider } from './auth/AuthContext'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MantineProvider defaultColorScheme="light">
-      <Notifications />
+      <Notifications position="top-right" />
       <BrowserRouter>
         <AuthProvider>
           <App />

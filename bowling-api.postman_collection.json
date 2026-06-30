@@ -1,0 +1,797 @@
+{
+  "info": {
+    "_postman_id": "6f8a2d1e-3b4c-4e5f-9a0b-1c2d3e4f5a6b",
+    "name": "Bowling Group Score Calculator API",
+    "description": "Complete REST API collection.\n\nRun **Auth → Login** first — the test script captures the JWT and stores it in the `token` collection variable. All other requests use it automatically via the collection-level Bearer auth.\n\nCollection variables auto-populated by scripts:\n- `token` — set by Login and Refresh Token\n- `bowlerId` — set by Create Bowler\n- `sessionId` — set by Create Session\n- `gameId` — set by Add Game to Session",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT Bearer token. Populated automatically by Login and Refresh Token."
+    },
+    {
+      "key": "bowlerId",
+      "value": "1",
+      "type": "string",
+      "description": "Populated automatically by Create Bowler."
+    },
+    {
+      "key": "sessionId",
+      "value": "1",
+      "type": "string",
+      "description": "Populated automatically by Create Session."
+    },
+    {
+      "key": "gameId",
+      "value": "1",
+      "type": "string",
+      "description": "Populated automatically by Add Game to Session."
+    }
+  ],
+  "item": [
+
+    {
+      "name": "Auth",
+      "item": [
+
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    console.log('JWT saved to collection variable \"token\"');",
+                  "    pm.test('Login successful', () => pm.response.to.have.status(200));",
+                  "    pm.test('Token received', () => {",
+                  "        pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "    });",
+                  "    pm.test('Username returned', () => {",
+                  "        pm.expect(json.username).to.be.a('string');",
+                  "    });",
+                  "    pm.test('Roles returned', () => {",
+                  "        pm.expect(json.roles).to.be.an('array').and.not.empty;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Login failed - check credentials', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"changeme\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Obtain a JWT token. No authentication required.\n\nThe test script automatically saves the token to the `token` collection variable so all subsequent requests are authenticated."
+          }
+        },
+
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Registration accepted', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Success message returned', () => {",
+                  "        pm.expect(pm.response.json().message).to.include('registered');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register a new user account. No authentication required. New accounts receive ROLE_USER."
+          }
+        },
+
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    console.log('JWT refreshed and saved to collection variable \"token\"');",
+                  "    pm.test('Refresh successful', () => pm.response.to.have.status(200));",
+                  "    pm.test('New token received', () => {",
+                  "        pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "refresh"]
+            },
+            "description": "Issue a new JWT with a reset expiry without re-entering credentials. Requires a valid token. The test script updates the `token` collection variable."
+          }
+        },
+
+        {
+          "name": "Get Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.test('Username present', () => pm.expect(json.username).to.be.a('string'));",
+                  "    pm.test('Roles present', () => pm.expect(json.roles).to.be.an('array'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Returns the authenticated user's username and roles."
+          }
+        },
+
+        {
+          "name": "Change Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Success message', () => {",
+                  "        pm.expect(pm.response.json().message).to.include('changed');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"changeme\",\n  \"newPassword\": \"newPassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "change-password"]
+            },
+            "description": "Change the authenticated user's password. currentPassword must match the existing password. newPassword must be at least 8 characters."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "Bowlers",
+      "item": [
+
+        {
+          "name": "List All Bowlers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bowlers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bowlers"]
+            }
+          }
+        },
+
+        {
+          "name": "Create Bowler",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('bowlerId', json.id.toString());",
+                  "    console.log('Bowler ID saved:', json.id);",
+                  "    pm.test('ID assigned', () => pm.expect(json.id).to.be.a('number'));",
+                  "    pm.test('Name matches', () => pm.expect(json.name).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bowlers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bowlers"]
+            },
+            "description": "Requires ROLE_ADMIN. Name must be unique. Saves the returned ID to the `bowlerId` collection variable."
+          }
+        },
+
+        {
+          "name": "Get Bowler by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.test('ID matches', () => pm.expect(json.id.toString()).to.equal(pm.collectionVariables.get('bowlerId')));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bowlers/{{bowlerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bowlers", "{{bowlerId}}"]
+            }
+          }
+        },
+
+        {
+          "name": "Update Bowler",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Name updated', () => {",
+                  "        pm.expect(pm.response.json().name).to.equal('Alice B.');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice B.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bowlers/{{bowlerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bowlers", "{{bowlerId}}"]
+            },
+            "description": "Requires ROLE_ADMIN. Updates the bowler's display name."
+          }
+        },
+
+        {
+          "name": "Delete Bowler",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bowlers/{{bowlerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bowlers", "{{bowlerId}}"]
+            },
+            "description": "Requires ROLE_ADMIN. Returns 400 if the bowler has existing game history."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "Sessions",
+      "item": [
+
+        {
+          "name": "List All Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions"]
+            }
+          }
+        },
+
+        {
+          "name": "List Open Sessions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const sessions = pm.response.json();",
+                  "    pm.test('All sessions are OPEN', () => {",
+                  "        sessions.forEach(s => pm.expect(s.status).to.equal('OPEN'));",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/open",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", "open"]
+            }
+          }
+        },
+
+        {
+          "name": "Create Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('sessionId', json.id.toString());",
+                  "    console.log('Session ID saved:', json.id);",
+                  "    pm.test('Status is OPEN', () => pm.expect(json.status).to.equal('OPEN'));",
+                  "    pm.test('ID assigned', () => pm.expect(json.id).to.be.a('number'));",
+                  "    pm.test('Date returned', () => pm.expect(json.sessionDate).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionDate\": \"2026-07-05\",\n  \"timeSlot\": \"MORNING\",\n  \"location\": \"Downtown Lanes\",\n  \"notes\": \"Weekly group session\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions"]
+            },
+            "description": "Requires ROLE_ADMIN. timeSlot must be MORNING, AFTERNOON, or EVENING. The sessionDate + timeSlot combination must be unique. Saves the returned ID to the `sessionId` collection variable."
+          }
+        },
+
+        {
+          "name": "Get Session by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('ID matches', () => {",
+                  "        pm.expect(pm.response.json().id.toString()).to.equal(pm.collectionVariables.get('sessionId'));",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", "{{sessionId}}"]
+            }
+          }
+        },
+
+        {
+          "name": "Close Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Status is CLOSED', () => {",
+                  "        pm.expect(pm.response.json().status).to.equal('CLOSED');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/{{sessionId}}/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", "{{sessionId}}", "close"]
+            },
+            "description": "Requires ROLE_ADMIN. Sets the session status to CLOSED."
+          }
+        },
+
+        {
+          "name": "Delete Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", "{{sessionId}}"]
+            },
+            "description": "Requires ROLE_ADMIN. Permanently deletes the session and all associated games, bowler_game records, and frames."
+          }
+        },
+
+        {
+          "name": "List Games in Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/{{sessionId}}/games",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", "{{sessionId}}", "games"]
+            }
+          }
+        },
+
+        {
+          "name": "Add Game to Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('gameId', json.id.toString());",
+                  "    console.log('Game ID saved:', json.id, '(game number', json.gameNumber + ')');",
+                  "    pm.test('ID assigned', () => pm.expect(json.id).to.be.a('number'));",
+                  "    pm.test('Game number assigned', () => pm.expect(json.gameNumber).to.be.a('number'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/{{sessionId}}/games",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sessions", "{{sessionId}}", "games"]
+            },
+            "description": "Requires ROLE_ADMIN. Game number is auto-incremented within the session. Saves the returned ID to the `gameId` collection variable."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "Scores",
+      "item": [
+
+        {
+          "name": "Submit Frames",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const frames = pm.response.json();",
+                  "    pm.test('Response is array', () => pm.expect(frames).to.be.an('array'));",
+                  "    pm.test('Frame numbers present', () => {",
+                  "        frames.forEach(f => pm.expect(f.frameNumber).to.be.a('number'));",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bowlerId\": {{bowlerId}},\n  \"gameId\": {{gameId}},\n  \"frames\": [\n    [10],\n    [7, 3],\n    [9, 0],\n    [10],\n    [0, 8],\n    [8, 2],\n    [0, 6],\n    [10],\n    [10],\n    [10, 8, 1]\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/scores/frames",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scores", "frames"]
+            },
+            "description": "Submit all frames for a bowler in a game. Re-submitting replaces previously saved frames and recalculates scores and win/loss results.\n\nEach frame: 1–3 balls, each ball 0–10 pins.\nFrames 1–9: 1 ball (strike) or 2 balls.\nFrame 10: 2–3 balls depending on strike/spare."
+          }
+        },
+
+        {
+          "name": "Get Frames",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/scores/frames?bowlerId={{bowlerId}}&gameId={{gameId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scores", "frames"],
+              "query": [
+                { "key": "bowlerId", "value": "{{bowlerId}}" },
+                { "key": "gameId", "value": "{{gameId}}" }
+              ]
+            },
+            "description": "Retrieve a bowler's saved frames for a game, ordered by frame number."
+          }
+        },
+
+        {
+          "name": "Get Game Participants",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const participants = pm.response.json();",
+                  "    pm.test('Response is array', () => pm.expect(participants).to.be.an('array'));",
+                  "    if (participants.length > 0) {",
+                  "        pm.test('Bowler name present', () => {",
+                  "            pm.expect(participants[0].bowlerName).to.be.a('string');",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/scores/games/{{gameId}}/participants",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scores", "games", "{{gameId}}", "participants"]
+            },
+            "description": "Returns every bowler entered in the game with their total score, game points, result (WIN/LOSS/DRAW), and full frame breakdown."
+          }
+        },
+
+        {
+          "name": "Get Session Leaderboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const entries = pm.response.json();",
+                  "    pm.test('Response is array', () => pm.expect(entries).to.be.an('array'));",
+                  "    if (entries.length > 0) {",
+                  "        pm.test('Total points present', () => {",
+                  "            pm.expect(entries[0].totalPoints).to.be.a('number');",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/scores/leaderboard?sessionId={{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scores", "leaderboard"],
+              "query": [
+                { "key": "sessionId", "value": "{{sessionId}}" }
+              ]
+            },
+            "description": "Returns bowlers ranked by total game points accumulated across all games in the session."
+          }
+        }
+
+      ]
+    }
+
+  ]
+}
