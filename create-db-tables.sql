@@ -1,0 +1,101 @@
+CREATE DATABASE IF NOT EXISTS bowling
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE bowling;
+
+DROP TABLE IF EXISTS frame;
+DROP TABLE IF EXISTS bowler_game;
+DROP TABLE IF EXISTS game;
+DROP TABLE IF EXISTS bowler;
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS role;
+DROP TABLE IF EXISTS bowling_session;
+
+CREATE TABLE users (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) DEFAULT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_USERS_USERNAME (username)
+) ENGINE=InnoDB;
+
+CREATE TABLE role (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_ROLE_NAME (name)
+) ENGINE=InnoDB;
+
+CREATE TABLE user_roles (
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    KEY FK_USER_ROLES_ROLE_ID (role_id),
+    CONSTRAINT FK_USER_ROLES_ROLE_ID FOREIGN KEY (role_id) REFERENCES role (id),
+    CONSTRAINT FK_USER_ROLES_USER_ID FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE bowler (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    user_id BIGINT DEFAULT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_BOWLER_USER_ID (user_id),
+    CONSTRAINT FK_BOWLER_USER FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE bowling_session (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    session_date DATE NOT NULL,
+    location VARCHAR(255) DEFAULT NULL,
+    notes VARCHAR(255) DEFAULT NULL,
+    status VARCHAR(255) NOT NULL,
+    time_slot VARCHAR(255) DEFAULT NULL,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE game (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    session_id BIGINT NOT NULL,
+    game_number INT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_GAME_SESSION_GAME_NUMBER (session_id, game_number),
+    CONSTRAINT FK_GAME_SESSION FOREIGN KEY (session_id) REFERENCES bowling_session (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE bowler_game (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    bowler_id BIGINT NOT NULL,
+    game_id BIGINT NOT NULL,
+    total_score INT DEFAULT NULL,
+    result VARCHAR(255) DEFAULT NULL,
+    game_points DOUBLE DEFAULT 0,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_BOWLER_GAME_BOWLER_GAME (bowler_id, game_id),
+    KEY FK_BOWLER_GAME_GAME_ID (game_id),
+    CONSTRAINT FK_BOWLER_GAME_BOWLER FOREIGN KEY (bowler_id) REFERENCES bowler (id),
+    CONSTRAINT FK_BOWLER_GAME_GAME FOREIGN KEY (game_id) REFERENCES game (id)
+) ENGINE=InnoDB;
+
+CREATE TABLE frame (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    bowler_game_id BIGINT NOT NULL,
+    frame_number INT NOT NULL,
+    ball1 INT DEFAULT NULL,
+    ball2 INT DEFAULT NULL,
+    ball3 INT DEFAULT NULL,
+    frame_score INT DEFAULT NULL,
+    cumulative_score INT DEFAULT NULL,
+    frame_points DOUBLE DEFAULT 0,
+    PRIMARY KEY (id),
+    UNIQUE KEY UK_FRAME_BOWLERGAME_NUMBER (bowler_game_id, frame_number),
+    KEY FK_FRAME_BOWLER_GAME_ID (bowler_game_id),
+    CONSTRAINT FK_FRAME_BOWLER_GAME FOREIGN KEY (bowler_game_id) REFERENCES bowler_game (id)
+) ENGINE=InnoDB;
+
+INSERT INTO role (name) VALUES ('ADMIN'), ('USER')
+ON DUPLICATE KEY UPDATE name = VALUES(name);

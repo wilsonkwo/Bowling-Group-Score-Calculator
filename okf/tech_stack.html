@@ -27,7 +27,8 @@ img{max-width:100%}
 <tr><td>Spring Web (<code>spring-boot-starter-web</code>)</td><td>3.3.5</td><td>REST controllers</td></tr>
 <tr><td>Spring Data JPA (<code>spring-boot-starter-data-jpa</code>)</td><td>3.3.5</td><td>repositories/entities, Hibernate ORM 6.5.3</td></tr>
 <tr><td>Spring Security (<code>spring-boot-starter-security</code>)</td><td>3.3.5</td><td>auth, method security; Spring Security 6.3.4</td></tr>
-<tr><td>Spring Boot Validation (<code>spring-boot-starter-validation</code>)</td><td>3.3.5</td><td><code>@Valid</code> request DTOs</td></tr>
+<tr><td>Spring Boot Validation (<code>spring-boot-starter-validation</code>)</td><td>3.3.5</td><td><code>@Valid</code> request DTOs; field errors returned as <code>{ "message": "Validation failed", "errors": { "&lt;field&gt;": "&lt;message&gt;" } }</code></td></tr>
+<tr><td>SpringDoc OpenAPI (<code>springdoc-openapi-starter-webmvc-ui</code>)</td><td>2.6.0</td><td>Auto-generates OpenAPI 3 spec from annotations; Swagger UI at <code>/swagger-ui.html</code>, raw YAML/JSON at <code>/v3/api-docs.yaml</code> and <code>/v3/api-docs</code></td></tr>
 <tr><td>Spring Boot DevTools</td><td>3.3.5</td><td>local dev auto-restart (runtime only)</td></tr>
 <tr><td>JJWT (<code>jjwt-api</code>/<code>jjwt-impl</code>/<code>jjwt-jackson</code>)</td><td>0.12.6</td><td>JWT issuing/verification, see <a href="../src/main/java/sg/sports/bowling/security/JwtUtil.java">JwtUtil</a></td></tr>
 <tr><td>Lombok</td><td>1.18.34</td><td><code>@Data</code>/<code>@Builder</code> boilerplate on entities/DTOs</td></tr>

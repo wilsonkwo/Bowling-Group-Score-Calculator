@@ -43,8 +43,12 @@ img{max-width:100%}
 <li><code>frontend/src/utils/frameRules.ts</code> — pure helpers for 10th-frame bonus-ball rules and building the per-bowler ball arrays to submit</li>
 <li><code>frontend/src/components/PinRack.tsx</code> + <code>BallCell.tsx</code> — clickable pin-deck input for each ball in <code>GameScorePage</code>&#39;s scoresheet, replacing manual number entry. A ball cell shows the standard 1-2-3-4 pin triangle; <strong>pins default to all "down"</strong> (a strike) rather than all standing, since experienced bowlers clear most pins most throws — clicking a pin marks it as the one(s) still standing. The committed ball value is <code>pins shown - pins marked standing</code>, computed on popover close (<code>BallCell</code>&#39;s <code>onCommit</code>)</li>
 <li><code>frontend/postcss.config.cjs</code> — required by Mantine: <code>postcss-preset-mantine</code> + <code>postcss-simple-vars</code> for breakpoint variables</li>
-<li><code>frontend/src/main.tsx</code> — wraps the app in <code>MantineProvider</code> + <code>Notifications</code>, imports <code>@mantine/core/styles.css</code> and <code>@mantine/notifications/styles.css</code> before the app&#39;s own <code>index.css</code></li>
+<li><code>frontend/src/theme.ts</code> — custom Mantine theme: bowling-inspired <code>lane</code> (warm maple/amber) primary and <code>pin</code> (deep red) accent color tuples, <code>defaultRadius: &#39;md&#39;</code></li>
+<li><code>frontend/src/components/BowlingPins.tsx</code> — theme-aware SVG of a standard 10-pin rack (used in the <code>Layout</code> header and on the login page)</li>
+<li><code>frontend/src/main.tsx</code> — wraps the app in <code>MantineProvider</code> (with <code>theme</code> and <code>defaultColorScheme="auto"</code>) + <code>Notifications</code>, imports <code>@mantine/core/styles.css</code> and <code>@mantine/notifications/styles.css</code> before the app&#39;s own <code>index.css</code></li>
 </ul>
+<h2>Theming</h2>
+<p>Light/dark color scheme with a sun/moon toggle (an <code>ActionIcon</code> via <code>useMantineColorScheme</code>/<code>useComputedColorScheme</code>, persisted by Mantine in <code>localStorage</code>): one toggle lives in the <code>Layout</code> header for authenticated pages and another top-right on <code>LoginPage</code>. <code>LoginPage</code> has a theme-aware gradient background and the <code>BowlingPins</code> rack above the title.</p>
 <h1>Running it</h1>
 <pre><code>
 cd frontend

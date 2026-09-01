@@ -28,7 +28,12 @@ The navbar (`Layout.tsx`) has two sections:
 - `frontend/src/utils/frameRules.ts` — pure helpers for 10th-frame bonus-ball rules and building the per-bowler ball arrays to submit
 - `frontend/src/components/PinRack.tsx` + `BallCell.tsx` — clickable pin-deck input for each ball in `GameScorePage`'s scoresheet, replacing manual number entry. A ball cell shows the standard 1-2-3-4 pin triangle; **pins default to all "down"** (a strike) rather than all standing, since experienced bowlers clear most pins most throws — clicking a pin marks it as the one(s) still standing. The committed ball value is `pins shown - pins marked standing`, computed on popover close (`BallCell`'s `onCommit`)
 - `frontend/postcss.config.cjs` — required by Mantine: `postcss-preset-mantine` + `postcss-simple-vars` for breakpoint variables
-- `frontend/src/main.tsx` — wraps the app in `MantineProvider` + `Notifications`, imports `@mantine/core/styles.css` and `@mantine/notifications/styles.css` before the app's own `index.css`
+- `frontend/src/theme.ts` — custom Mantine theme: bowling-inspired `lane` (warm maple/amber) primary and `pin` (deep red) accent color tuples, `defaultRadius: 'md'`
+- `frontend/src/components/BowlingPins.tsx` — theme-aware SVG of a standard 10-pin rack (used in the `Layout` header and on the login page)
+- `frontend/src/main.tsx` — wraps the app in `MantineProvider` (with `theme` and `defaultColorScheme="auto"`) + `Notifications`, imports `@mantine/core/styles.css` and `@mantine/notifications/styles.css` before the app's own `index.css`
+
+## Theming
+Light/dark color scheme with a sun/moon toggle (an `ActionIcon` via `useMantineColorScheme`/`useComputedColorScheme`, persisted by Mantine in `localStorage`): one toggle lives in the `Layout` header for authenticated pages and another top-right on `LoginPage`. `LoginPage` has a theme-aware gradient background and the `BowlingPins` rack above the title.
 
 # Running it
 ```

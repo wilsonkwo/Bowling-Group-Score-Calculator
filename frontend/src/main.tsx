@@ -8,10 +8,11 @@ import '@mantine/notifications/styles.css'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './auth/AuthContext'
+import { theme } from './theme'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <MantineProvider defaultColorScheme="light">
+    <MantineProvider theme={theme} defaultColorScheme="auto">
       <Notifications position="top-right" />
       <BrowserRouter>
         <AuthProvider>

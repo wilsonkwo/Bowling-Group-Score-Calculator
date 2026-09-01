@@ -1,12 +1,28 @@
 import { NavLink as RouterNavLink, Outlet, useNavigate } from 'react-router-dom'
-import { AppShell, Box, Group, Menu, Avatar, Text, Burger, NavLink } from '@mantine/core'
+import {
+  ActionIcon,
+  AppShell,
+  Box,
+  Group,
+  Menu,
+  Avatar,
+  Text,
+  Burger,
+  NavLink,
+  useComputedColorScheme,
+  useMantineColorScheme,
+} from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
+import { IconMoon, IconSun } from '@tabler/icons-react'
 import { useAuth } from '../auth/AuthContext'
+import { BowlingPins } from './BowlingPins'
 
 export function Layout() {
   const { username, isAdmin, logout } = useAuth()
   const navigate = useNavigate()
   const [navOpened, { toggle: toggleNav }] = useDisclosure()
+  const { setColorScheme } = useMantineColorScheme()
+  const colorScheme = useComputedColorScheme('light')
 
   function handleLogout() {
     logout()
@@ -17,27 +33,39 @@ export function Layout() {
     <AppShell header={{ height: 60 }} navbar={{ width: 220, breakpoint: 'sm', collapsed: { mobile: !navOpened } }}>
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
-          <Group>
+          <Group gap="xs">
             <Burger opened={navOpened} onClick={toggleNav} hiddenFrom="sm" size="sm" />
+            <BowlingPins width={22} />
             <Text size="lg" fw={700}>Bowling Score Calculator</Text>
           </Group>
-          <Menu shadow="md" width={180} position="bottom-end">
-            <Menu.Target>
-              <Group gap="xs" style={{ cursor: 'pointer' }}>
-                <Avatar radius="xl" color="blue">{username?.slice(0, 1).toUpperCase()}</Avatar>
-                <Text fw={500}>{username}</Text>
-              </Group>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item component={RouterNavLink} to="/change-password">
-                Change password
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item color="red" onClick={handleLogout}>
-                Log out
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+          <Group gap="xs">
+            <ActionIcon
+              variant="default"
+              size="lg"
+              radius="xl"
+              aria-label="Toggle color scheme"
+              onClick={() => setColorScheme(colorScheme === 'light' ? 'dark' : 'light')}
+            >
+              {colorScheme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
+            </ActionIcon>
+            <Menu shadow="md" width={180} position="bottom-end">
+              <Menu.Target>
+                <Group gap="xs" style={{ cursor: 'pointer' }}>
+                  <Avatar radius="xl" color="lane">{username?.slice(0, 1).toUpperCase()}</Avatar>
+                  <Text fw={500}>{username}</Text>
+                </Group>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item component={RouterNavLink} to="/change-password">
+                  Change password
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item color="red" onClick={handleLogout}>
+                  Log out
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
       </AppShell.Header>
 
